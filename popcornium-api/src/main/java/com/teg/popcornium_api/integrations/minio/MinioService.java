@@ -20,18 +20,18 @@ public class MinioService {
     private final MinioClient minioClient;
 
     @Value("${minio.bucket}")
-    private String bucketName;
+    private String popcorniumBucketName;
 
     @PostConstruct
     public void initializeBucket() {
         try {
             boolean exists = minioClient.bucketExists(
-                    BucketExistsArgs.builder().bucket(bucketName).build()
+                    BucketExistsArgs.builder().bucket(popcorniumBucketName).build()
             );
 
             if (!exists) {
                 minioClient.makeBucket(
-                        MakeBucketArgs.builder().bucket(bucketName).build()
+                        MakeBucketArgs.builder().bucket(popcorniumBucketName).build()
                 );
             }
 
@@ -44,7 +44,7 @@ public class MinioService {
         try {
             minioClient.putObject(
                     PutObjectArgs.builder()
-                            .bucket(bucketName)
+                            .bucket(popcorniumBucketName)
                             .object(fileName)
                             .contentType(file.getContentType())
                             .stream(file.getInputStream(), file.getSize(), -1)
@@ -61,7 +61,7 @@ public class MinioService {
     public byte[] download(String fileName) {
         try (InputStream stream = minioClient.getObject(
                 GetObjectArgs.builder()
-                        .bucket(bucketName)
+                        .bucket(popcorniumBucketName)
                         .object(fileName)
                         .build()
         )) {
@@ -70,5 +70,14 @@ public class MinioService {
         } catch (Exception e) {
             throw new RuntimeException("Failed to download file from MinIO", e);
         }
+    }
+
+    public InputStream getFile(String filename) throws Exception {
+        return minioClient.getObject(
+                GetObjectArgs.builder()
+                        .bucket(popcorniumBucketName)
+                        .object(filename)
+                        .build()
+        );
     }
 }

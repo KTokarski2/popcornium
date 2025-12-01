@@ -3,6 +3,8 @@ package com.teg.popcornium_api.integrations.minio;
 import jakarta.annotation.security.PermitAll;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -12,6 +14,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.InputStream;
+import java.net.URLConnection;
 import java.util.UUID;
 
 @RestController
@@ -29,12 +33,34 @@ public class FileController {
         return ResponseEntity.ok(generatedName);
     }
 
-    @GetMapping("/download/{fileName}")
+    @GetMapping("/download1/{fileName}")
     public ResponseEntity<byte[]> download(@PathVariable String fileName) {
         byte[] data = minioService.download(fileName);
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + fileName)
                 .body(data);
+    }
+
+    @GetMapping("/download2/{filename}")
+    public ResponseEntity<byte[]> downloadFile(@PathVariable String filename) {
+        try {
+            InputStream stream = minioService.getFile(filename);
+
+            byte[] bytes = stream.readAllBytes();
+
+            String contentType = URLConnection.guessContentTypeFromName(filename);
+            if (contentType == null) {
+                contentType = "application/octet-stream";
+            }
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(contentType))
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                    .body(bytes);
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 }
