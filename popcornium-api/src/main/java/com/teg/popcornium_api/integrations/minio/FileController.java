@@ -33,16 +33,7 @@ public class FileController {
         return ResponseEntity.ok(generatedName);
     }
 
-    @GetMapping("/download1/{fileName}")
-    public ResponseEntity<byte[]> download(@PathVariable String fileName) {
-        byte[] data = minioService.download(fileName);
-
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + fileName)
-                .body(data);
-    }
-
-    @GetMapping("/download2/{filename}")
+    @GetMapping("/download/{filename}")
     public ResponseEntity<byte[]> downloadFile(@PathVariable String filename) {
         try {
             InputStream stream = minioService.getFile(filename);
