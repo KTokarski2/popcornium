@@ -9,5 +9,4 @@ public class PopcorniumApiApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(PopcorniumApiApplication.class, args);
 	}
-
 }
