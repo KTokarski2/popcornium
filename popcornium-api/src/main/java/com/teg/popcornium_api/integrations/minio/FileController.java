@@ -1,5 +1,6 @@
 package com.teg.popcornium_api.integrations.minio;
 
+import jakarta.annotation.security.PermitAll;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +17,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/files")
 @RequiredArgsConstructor
+@PermitAll
 public class FileController {
 
     private final MinioService minioService;
