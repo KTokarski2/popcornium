@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -40,18 +41,20 @@ public class MinioService {
         }
     }
 
-    public String upload(String fileName, MultipartFile file) {
+    public String upload(MultipartFile file) {
         try {
+            String fileId = UUID.randomUUID().toString();
+
             minioClient.putObject(
                     PutObjectArgs.builder()
                             .bucket(popcorniumBucketName)
-                            .object(fileName)
+                            .object(fileId)
                             .contentType(file.getContentType())
                             .stream(file.getInputStream(), file.getSize(), -1)
                             .build()
             );
 
-            return fileName;
+            return fileId;
 
         } catch (Exception e) {
             throw new RuntimeException("Failed to upload file to MinIO", e);
