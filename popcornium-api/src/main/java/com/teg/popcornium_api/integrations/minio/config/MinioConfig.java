@@ -1,4 +1,4 @@
-package com.teg.popcornium_api.integrations.minio;
+package com.teg.popcornium_api.integrations.minio.config;
 
 import io.minio.MinioClient;
 import org.springframework.beans.factory.annotation.Value;
