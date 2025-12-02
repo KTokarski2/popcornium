@@ -1,13 +1,13 @@
 package com.teg.popcornium_api.common.model;
 
 import jakarta.persistence.Column;
-import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.MappedSuperclass;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @MappedSuperclass
 @Getter
@@ -15,9 +15,7 @@ import java.time.LocalDateTime;
 public abstract class AbstractEntity {
 
     @Id
-    @GeneratedValue(generator = "uuid2")
-    @Column(name = "ID", unique = true, nullable = false, length = 50)
-    private String id;
+    private String id = UUID.randomUUID().toString();
 
     @Column(name = "created", nullable = false)
     private LocalDateTime created;

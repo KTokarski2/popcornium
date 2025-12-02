@@ -10,6 +10,7 @@ import lombok.Setter;
 @Setter
 public class Description extends AbstractEntity {
 
+    @Lob
     @Column(name = "text")
     private String text;
 

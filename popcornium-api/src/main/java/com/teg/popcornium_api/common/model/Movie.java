@@ -1,12 +1,10 @@
 package com.teg.popcornium_api.common.model;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.HashSet;
 import java.util.Set;
 
 @Entity
@@ -33,12 +31,15 @@ public class Movie extends AbstractEntity {
     @Column(name = "poster_url")
     private String posterUrl;
 
-    @OneToMany(mappedBy = "movie")
-    private Set<Description> descriptions;
+    @Column(name = "director")
+    private String director;
 
-    @OneToMany(mappedBy = "movie")
-    private Set<Actor> actors;
+    @OneToMany(mappedBy = "movie", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<Description> descriptions = new HashSet<>();
 
-    @OneToMany(mappedBy = "movie")
-    private Set<Category> categories;
+    @OneToMany(mappedBy = "movie", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<Actor> actors = new HashSet<>();
+
+    @OneToMany(mappedBy = "movie", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<Category> categories = new HashSet<>();
 }
