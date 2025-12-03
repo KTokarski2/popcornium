@@ -1,4 +1,4 @@
-package com.teg.popcornium_api.integrations.filmweb.mapper;
+package com.teg.popcornium_api.seeder.filmweb.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 

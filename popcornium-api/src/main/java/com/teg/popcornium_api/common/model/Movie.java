@@ -16,8 +16,8 @@ public class Movie extends AbstractEntity {
     @Column(name = "polish_title")
     private String polishTitle;
 
-    @Column(name = "english_title")
-    private String englishTitle;
+    @Column(name = "original_title")
+    private String originalTitle;
 
     @Column(name = "production_year")
     private Integer productionYear;
@@ -31,15 +31,16 @@ public class Movie extends AbstractEntity {
     @Column(name = "poster_url")
     private String posterUrl;
 
-    @Column(name = "director")
-    private String director;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "director_id")
+    private Director director;
+
+    @OneToMany(mappedBy = "movie", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<MovieActor> movieActors = new HashSet<>();
+
+    @OneToMany(mappedBy = "movie", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<MovieCategory> movieCategories = new HashSet<>();
 
     @OneToMany(mappedBy = "movie", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Description> descriptions = new HashSet<>();
-
-    @OneToMany(mappedBy = "movie", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<Actor> actors = new HashSet<>();
-
-    @OneToMany(mappedBy = "movie", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<Category> categories = new HashSet<>();
 }

@@ -4,22 +4,21 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.HashSet;
+import java.util.Set;
+
 @Entity
 @Table(name = "actor")
 @Getter
 @Setter
 public class Actor extends AbstractEntity{
 
-    @Column(name = "full_name", nullable = false)
-    private String fullName;
-
-    @Column(name = "role", nullable = false)
-    private String role;
+    @Column(name = "name", nullable = false)
+    private String name;
 
     @Column(name = "photo_url")
     private String photoUrl;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "movie_id", nullable = false)
-    private Movie movie;
+    @OneToMany(mappedBy = "actor", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<MovieActor> movieActors = new HashSet<>();
 }

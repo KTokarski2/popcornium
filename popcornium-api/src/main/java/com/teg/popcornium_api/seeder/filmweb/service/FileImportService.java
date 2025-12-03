@@ -1,12 +1,11 @@
-package com.teg.popcornium_api.integrations.filmweb.service;
+package com.teg.popcornium_api.seeder.filmweb.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.teg.popcornium_api.common.model.Actor;
-import com.teg.popcornium_api.common.model.Description;
 import com.teg.popcornium_api.common.model.Movie;
 import com.teg.popcornium_api.common.repository.MovieRepository;
 import com.teg.popcornium_api.common.util.DataConversionUtil;
-import com.teg.popcornium_api.integrations.filmweb.mapper.MovieImportDto;
+import com.teg.popcornium_api.seeder.filmweb.dto.MovieImportDto;
+import com.teg.popcornium_api.seeder.filmweb.mapper.MovieMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,10 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
-import java.util.HashSet;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Service
@@ -30,6 +26,7 @@ import java.util.stream.Stream;
 public class FileImportService {
 
     private final MovieRepository movieRepository;
+    private final MovieMapper movieMapper;
     private final ObjectMapper objectMapper;
     private final DataConversionUtil conversionUtil;
 
@@ -80,30 +77,57 @@ public class FileImportService {
             Path foundJsonPath = jsonFilePath.get();
             MovieImportDto movieDto = objectMapper.readValue(foundJsonPath.toFile(), MovieImportDto.class);
 
-            String englishTitle = movieDto.englishTitle();
+            String originalTitle = movieDto.originalTitle();
             Integer productionYear = conversionUtil.parseProductionYear(movieDto.productionYear()).orElse(null);
 
-            if (englishTitle == null || englishTitle.isBlank() || productionYear == null) {
+            if (originalTitle == null || originalTitle.isBlank() || productionYear == null) {
                 log.warn("Skipping directory {}: Missing English title or production year.", folderName);
                 return 0;
             }
 
-            Optional<Movie> existingMovie = movieRepository.findByEnglishTitleAndProductionYear(
-                    englishTitle,
+            Optional<Movie> existingMovie = movieRepository.findByOriginalTitleAndProductionYear(
+                    originalTitle,
                     productionYear
             );
 
-            Movie movie = mapToMovieEntity(movieDto);
+            Movie newMovieData = movieMapper.mapToMovieEntity(movieDto);
 
             if (existingMovie.isPresent()) {
-                movie.setId(existingMovie.get().getId());
-                movie.setCreated(existingMovie.get().getCreated());
-                log.info("Updated existing movie: {} ({})", movie.getPolishTitle(), movie.getEnglishTitle());
+                Movie existing = existingMovie.get();
+
+                newMovieData.setId(existing.getId());
+                newMovieData.setCreated(existing.getCreated());
+                newMovieData.setModified(LocalDateTime.now());
+
+                existing.getMovieActors().clear();
+                existing.getMovieCategories().clear();
+                existing.getDescriptions().clear();
+
+                newMovieData.getMovieActors().forEach(ma -> ma.setMovie(existing));
+                existing.getMovieActors().addAll(newMovieData.getMovieActors());
+
+                newMovieData.getMovieCategories().forEach(mc -> mc.setMovie(existing));
+                existing.getMovieCategories().addAll(newMovieData.getMovieCategories());
+
+                newMovieData.getDescriptions().forEach(d -> d.setMovie(existing));
+                existing.getDescriptions().addAll(newMovieData.getDescriptions());
+
+                existing.setPolishTitle(newMovieData.getPolishTitle());
+                existing.setOriginalTitle(newMovieData.getOriginalTitle());
+                existing.setProductionYear(newMovieData.getProductionYear());
+                existing.setRating(newMovieData.getRating());
+                existing.setRatingCount(newMovieData.getRatingCount());
+                existing.setPosterUrl(newMovieData.getPosterUrl());
+                existing.setDirector(newMovieData.getDirector());
+                existing.setModified(LocalDateTime.now());
+
+                movieRepository.save(existing);
+                log.info("Updated existing movie: {} ({})", existing.getPolishTitle(), existing.getOriginalTitle());
             } else {
-                log.info("Successfully imported NEW movie: {} ({})", movie.getPolishTitle(), movie.getEnglishTitle());
+                movieRepository.save(newMovieData);
+                log.info("Successfully imported NEW movie: {} ({})", newMovieData.getPolishTitle(), newMovieData.getOriginalTitle());
             }
 
-            movieRepository.save(movie);
             return 1;
 
         } catch (IOException e) {
@@ -115,55 +139,5 @@ public class FileImportService {
         }
 
         return 0;
-    }
-
-    private Movie mapToMovieEntity(MovieImportDto dto) {
-        LocalDateTime now = LocalDateTime.now();
-
-        Double rating = conversionUtil.parseRating(dto.rating()).orElse(null);
-        Integer productionYear = conversionUtil.parseProductionYear(dto.productionYear()).orElse(null);
-
-        Movie movie = new Movie();
-        movie.setCreated(now);
-        movie.setModified(now);
-        movie.setPolishTitle(dto.polishTitle());
-        movie.setEnglishTitle(dto.englishTitle());
-        movie.setProductionYear(productionYear);
-        movie.setRating(rating);
-        movie.setRatingCount(dto.ratingCount());
-        movie.setPosterUrl(dto.posterUrl());
-
-        Set<Description> descriptions = Optional.ofNullable(dto.descriptions())
-                .stream()
-                .flatMap(java.util.Collection::stream)
-                .map(text -> {
-                    Description description = new Description();
-                    description.setCreated(now);
-                    description.setModified(now);
-                    description.setText(text);
-                    description.setMovie(movie);
-                    return description;
-                })
-                .collect(Collectors.toSet());
-        movie.setDescriptions(descriptions);
-
-        Set<Actor> actors = Optional.ofNullable(dto.actors())
-                .stream()
-                .flatMap(map -> map.values().stream())
-                .map(actorDto -> {
-                    Actor actor = new Actor();
-                    actor.setCreated(now);
-                    actor.setModified(now);
-                    actor.setFullName(actorDto.fullName());
-                    actor.setRole(actorDto.role());
-                    actor.setPhotoUrl(actorDto.photoLink());
-                    actor.setMovie(movie);
-                    return actor;
-                })
-                .collect(Collectors.toSet());
-        movie.setActors(actors);
-        movie.setCategories(new HashSet<>());
-
-        return movie;
     }
 }
