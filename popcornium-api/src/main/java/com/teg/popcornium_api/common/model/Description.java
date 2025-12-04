@@ -14,6 +14,10 @@ public class Description extends AbstractEntity {
     @Column(name = "text")
     private String text;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "language", nullable = false)
+    private Language language;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "movie_id", nullable = false)
     private Movie movie;

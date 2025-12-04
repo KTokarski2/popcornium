@@ -1,12 +1,6 @@
 package com.teg.popcornium_api.seeder.filmweb.mapper;
 
-import com.teg.popcornium_api.common.model.Actor;
-import com.teg.popcornium_api.common.model.Category;
-import com.teg.popcornium_api.common.model.Description;
-import com.teg.popcornium_api.common.model.Director;
-import com.teg.popcornium_api.common.model.Movie;
-import com.teg.popcornium_api.common.model.MovieActor;
-import com.teg.popcornium_api.common.model.MovieCategory;
+import com.teg.popcornium_api.common.model.*;
 import com.teg.popcornium_api.common.repository.ActorRepository;
 import com.teg.popcornium_api.common.repository.CategoryRepository;
 import com.teg.popcornium_api.common.repository.DirectorRepository;
@@ -80,6 +74,7 @@ public class MovieMapper {
                     description.setCreated(now);
                     description.setModified(now);
                     description.setText(text);
+                    description.setLanguage(Language.PL);
                     description.setMovie(movie);
                     return description;
                 })
