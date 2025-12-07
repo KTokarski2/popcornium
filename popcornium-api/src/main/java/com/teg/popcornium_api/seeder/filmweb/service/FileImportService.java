@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.teg.popcornium_api.common.model.Movie;
 import com.teg.popcornium_api.common.repository.MovieRepository;
 import com.teg.popcornium_api.common.util.DataConversionUtil;
-import com.teg.popcornium_api.embedding.service.MovieDocumentService;
 import com.teg.popcornium_api.embedding.service.MovieSavedEvent;
 import com.teg.popcornium_api.seeder.filmweb.dto.MovieImportDto;
 import com.teg.popcornium_api.seeder.filmweb.mapper.MovieMapper;
