@@ -4,11 +4,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.teg.popcornium_api.common.model.Movie;
 import com.teg.popcornium_api.common.repository.MovieRepository;
 import com.teg.popcornium_api.common.util.DataConversionUtil;
+import com.teg.popcornium_api.embedding.service.MovieDocumentService;
+import com.teg.popcornium_api.embedding.service.MovieSavedEvent;
 import com.teg.popcornium_api.seeder.filmweb.dto.MovieImportDto;
 import com.teg.popcornium_api.seeder.filmweb.mapper.MovieMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +32,7 @@ public class FileImportService {
     private final MovieMapper movieMapper;
     private final ObjectMapper objectMapper;
     private final DataConversionUtil conversionUtil;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Value("${MOVIE_IMPORT_BASE_PATH:${movie.import.base-path}}")
     private String baseFolderPath;
@@ -90,43 +94,45 @@ public class FileImportService {
                     productionYear
             );
 
-            Movie newMovieData = movieMapper.mapToMovieEntity(movieDto);
+            Movie movieToSave;
+            boolean isNew = existingMovie.isEmpty();
 
-            if (existingMovie.isPresent()) {
-                Movie existing = existingMovie.get();
-
-                newMovieData.setId(existing.getId());
-                newMovieData.setCreated(existing.getCreated());
-                newMovieData.setModified(LocalDateTime.now());
-
-                existing.getMovieActors().clear();
-                existing.getMovieCategories().clear();
-                existing.getDescriptions().clear();
-
-                newMovieData.getMovieActors().forEach(ma -> ma.setMovie(existing));
-                existing.getMovieActors().addAll(newMovieData.getMovieActors());
-
-                newMovieData.getMovieCategories().forEach(mc -> mc.setMovie(existing));
-                existing.getMovieCategories().addAll(newMovieData.getMovieCategories());
-
-                newMovieData.getDescriptions().forEach(d -> d.setMovie(existing));
-                existing.getDescriptions().addAll(newMovieData.getDescriptions());
-
-                existing.setPolishTitle(newMovieData.getPolishTitle());
-                existing.setOriginalTitle(newMovieData.getOriginalTitle());
-                existing.setProductionYear(newMovieData.getProductionYear());
-                existing.setRating(newMovieData.getRating());
-                existing.setRatingCount(newMovieData.getRatingCount());
-                existing.setPosterUrl(newMovieData.getPosterUrl());
-                existing.setDirector(newMovieData.getDirector());
-                existing.setModified(LocalDateTime.now());
-
-                movieRepository.save(existing);
-                log.info("Updated existing movie: {} ({})", existing.getPolishTitle(), existing.getOriginalTitle());
+            if (isNew) {
+                movieToSave = movieMapper.mapToMovieEntity(movieDto);
             } else {
-                movieRepository.save(newMovieData);
-                log.info("Successfully imported NEW movie: {} ({})", newMovieData.getPolishTitle(), newMovieData.getOriginalTitle());
+                movieToSave = existingMovie.get();
+                Movie newMovieData = movieMapper.mapToMovieEntity(movieDto);
+
+                newMovieData.getMovieActors().forEach(ma -> ma.setMovie(movieToSave));
+                movieToSave.getMovieActors().clear();
+                movieToSave.getMovieActors().addAll(newMovieData.getMovieActors());
+
+                newMovieData.getMovieCategories().forEach(mc -> mc.setMovie(movieToSave));
+                movieToSave.getMovieCategories().clear();
+                movieToSave.getMovieCategories().addAll(newMovieData.getMovieCategories());
+
+                newMovieData.getDescriptions().forEach(d -> d.setMovie(movieToSave));
+                movieToSave.getDescriptions().clear();
+                movieToSave.getDescriptions().addAll(newMovieData.getDescriptions());
+
+                movieToSave.setPolishTitle(newMovieData.getPolishTitle());
+                movieToSave.setOriginalTitle(newMovieData.getOriginalTitle());
+                movieToSave.setProductionYear(newMovieData.getProductionYear());
+                movieToSave.setRating(newMovieData.getRating());
+                movieToSave.setRatingCount(newMovieData.getRatingCount());
+                movieToSave.setPosterUrl(newMovieData.getPosterUrl());
+                movieToSave.setDirector(newMovieData.getDirector());
+                movieToSave.setModified(LocalDateTime.now());
             }
+
+            Movie savedMovie = movieRepository.save(movieToSave);
+
+            eventPublisher.publishEvent(new MovieSavedEvent(savedMovie.getId()));
+
+            log.info("{} movie: {} ({}) and published indexing event.",
+                    isNew ? "Successfully imported NEW" : "Updated existing",
+                    savedMovie.getPolishTitle(),
+                    savedMovie.getOriginalTitle());
 
             return 1;
 
