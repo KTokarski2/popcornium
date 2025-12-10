@@ -33,6 +33,7 @@ public class WikipediaClientImpl implements WikipediaClient {
 
     private static final String CONTENT_ENDPOINT = "?action=query&prop=extracts&explaintext=true&titles={title}&format=json";
     private static final String SEARCH_ENDPOINT = "?action=query&list=search&srsearch={query}&srlimit={limit}&format=json";
+    public static final String BASE_ARTICLE_URL = "https://pl.wikipedia.org/wiki/";
 
     private final RestClient restClient;
     private final WikipediaApiProperties properties;
@@ -139,6 +140,6 @@ public class WikipediaClientImpl implements WikipediaClient {
 
     private String buildArticleUrl(String title) {
         String encodedTitle = URLEncoder.encode(title.replace(" ", "_"), StandardCharsets.UTF_8);
-        return "https://pl.wikipedia.org/wiki/" + encodedTitle;
+        return BASE_ARTICLE_URL + encodedTitle;
     }
 }

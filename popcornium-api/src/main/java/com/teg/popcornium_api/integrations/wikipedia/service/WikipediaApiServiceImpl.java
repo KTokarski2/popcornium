@@ -28,6 +28,9 @@ public class WikipediaApiServiceImpl implements WikipediaApiService {
     private static final String MSG_ARTICLE_ALREADY_EXISTS = "Wikipedia article already exists for movie ID: {} in language: {}";
     private static final String MSG_SUCCESSFULLY_SAVED_ARTICLE = "Successfully saved Wikipedia article for movie: {}";
     private static final String MSG_DISPLAYING_ARTICLE_ON_CONSOLE = "Displaying article on console for movie: {}";
+    private static final String MSG_BUILT_SEARCH_QUERY = "Built search query: {}";
+    private static final String MSG_NO_RESULTS_WITH_YEAR_TRYING_WITHOUT_PRODUCTION_YEAR = "No results with year, trying without production year";
+    private static final String MSG_FOUND_ARTICLE_DOESN_T_SEEM_TO_BE_ABOUT_THE_MOVIE_TITLE = "Found article doesn't seem to be about the movie. Title: {}";
 
     private static final String ERROR_NO_ARTICLE_FOUND = "No Wikipedia article found for movie with ID: ";
     private static final String ERROR_ARTICLE_CONTENT_NOT_AVAILABLE = "Article content not available for: ";
@@ -56,12 +59,12 @@ public class WikipediaApiServiceImpl implements WikipediaApiService {
             return article;
         }
         String searchQuery = buildSearchQuery(movie);
-        log.debug("Built search query: {}", searchQuery);
+        log.debug(MSG_BUILT_SEARCH_QUERY, searchQuery);
 
         List<String> searchResults = wikipediaClient.searchArticles(searchQuery);
 
         if (searchResults.isEmpty()) {
-            log.warn("No results with year, trying without production year");
+            log.warn(MSG_NO_RESULTS_WITH_YEAR_TRYING_WITHOUT_PRODUCTION_YEAR);
             searchQuery = movie.getPolishTitle() != null
                     ? movie.getPolishTitle()
                     : movie.getOriginalTitle();
@@ -78,7 +81,7 @@ public class WikipediaApiServiceImpl implements WikipediaApiService {
                 .orElseThrow(() -> new ArticleNotFoundException(
                         ERROR_ARTICLE_CONTENT_NOT_AVAILABLE + bestMatch));
         if (!isMovieArticle(articleDto, movie)) {
-            log.warn("Found article doesn't seem to be about the movie. Title: {}", articleDto.title());
+            log.warn(MSG_FOUND_ARTICLE_DOESN_T_SEEM_TO_BE_ABOUT_THE_MOVIE_TITLE, articleDto.title());
         }
         WikipediaArticle wikipediaArticle = createWikipediaArticle(articleDto, movie);
         WikipediaArticle savedArticle = wikipediaArticleRepository.save(wikipediaArticle);
