@@ -27,7 +27,6 @@ public class WikipediaApiServiceImpl implements WikipediaApiService {
     private static final String MSG_USING_FIRST_SEARCH_RESULT = "Using first search result: {}";
     private static final String MSG_ARTICLE_ALREADY_EXISTS = "Wikipedia article already exists for movie ID: {} in language: {}";
     private static final String MSG_SUCCESSFULLY_SAVED_ARTICLE = "Successfully saved Wikipedia article for movie: {}";
-    private static final String MSG_DISPLAYING_ARTICLE_ON_CONSOLE = "Displaying article on console for movie: {}";
     private static final String MSG_BUILT_SEARCH_QUERY = "Built search query: {}";
     private static final String MSG_NO_RESULTS_WITH_YEAR_TRYING_WITHOUT_PRODUCTION_YEAR = "No results with year, trying without production year";
     private static final String MSG_FOUND_ARTICLE_DOESN_T_SEEM_TO_BE_ABOUT_THE_MOVIE_TITLE = "Found article doesn't seem to be about the movie. Title: {}";
@@ -54,9 +53,7 @@ public class WikipediaApiServiceImpl implements WikipediaApiService {
 
         if (existingArticle.isPresent()) {
             log.info(MSG_ARTICLE_ALREADY_EXISTS, movieId, Language.PL);
-            WikipediaArticle article = existingArticle.get();
-            displayArticleOnConsole(article);
-            return article;
+            return existingArticle.get();
         }
         String searchQuery = buildSearchQuery(movie);
         log.debug(MSG_BUILT_SEARCH_QUERY, searchQuery);
@@ -86,7 +83,6 @@ public class WikipediaApiServiceImpl implements WikipediaApiService {
         WikipediaArticle wikipediaArticle = createWikipediaArticle(articleDto, movie);
         WikipediaArticle savedArticle = wikipediaArticleRepository.save(wikipediaArticle);
         log.info(MSG_SUCCESSFULLY_SAVED_ARTICLE, movie.getPolishTitle());
-        displayArticleOnConsole(savedArticle);
         return savedArticle;
     }
 
@@ -129,6 +125,11 @@ public class WikipediaApiServiceImpl implements WikipediaApiService {
                 return result;
             }
         }
+        for (String result : results) {
+            if (result.equals(movie.getPolishTitle())) {
+                return result;
+            }
+        }
         return results.getFirst();
     }
 
@@ -143,21 +144,5 @@ public class WikipediaApiServiceImpl implements WikipediaApiService {
                 content.contains(String.valueOf(movie.getProductionYear()));
 
         return hasMovieKeywords || hasProductionYear;
-    }
-
-    private void displayArticleOnConsole(WikipediaArticle article) {
-        log.debug(MSG_DISPLAYING_ARTICLE_ON_CONSOLE, article.getMovie().getPolishTitle());
-
-        System.out.println("=".repeat(80));
-        System.out.println("WIKIPEDIA ARTICLE");
-        System.out.println("=".repeat(80));
-        System.out.println("Movie: " + article.getMovie().getPolishTitle()
-                + " (" + article.getMovie().getOriginalTitle() + ")");
-        System.out.println("Language: " + article.getLanguage().getFullName());
-        System.out.println("Created: " + article.getCreated());
-        System.out.println("=".repeat(80));
-        System.out.println("\nCONTENT:");
-        System.out.println(article.getText());
-        System.out.println("\n" + "=".repeat(80));
     }
 }
