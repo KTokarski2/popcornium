@@ -36,6 +36,9 @@ public class Movie extends AbstractEntity {
     private Director director;
 
     @OneToMany(mappedBy = "movie", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<WikipediaArticle> wikipediaArticles = new HashSet<>();
+
+    @OneToMany(mappedBy = "movie", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<MovieActor> movieActors = new HashSet<>();
 
     @OneToMany(mappedBy = "movie", cascade = CascadeType.ALL, orphanRemoval = true)
