@@ -3,12 +3,15 @@ package com.teg.popcornium_api.integrations.azureopenai.controller;
 import com.teg.popcornium_api.common.model.dto.ChatRequest;
 import com.teg.popcornium_api.common.service.AiChatService;
 import com.teg.popcornium_api.common.service.AiEmbeddingService;
+import com.teg.popcornium_api.embedding.service.MovieDocumentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @Slf4j
 @RestController
@@ -18,6 +21,7 @@ public class AzureOpenAiTestController {
 
     private final AiChatService aiChatService;
     private final AiEmbeddingService aiEmbeddingService;
+    private final MovieDocumentService movieDocumentService;
 
     @GetMapping("/chat")
     public ResponseEntity<String> chat() {
@@ -35,5 +39,11 @@ public class AzureOpenAiTestController {
     @GetMapping("/embedding")
     public ResponseEntity<String> embedding() {
         return ResponseEntity.ok(aiEmbeddingService.embed("TEST").toString());
+    }
+
+    @GetMapping("/embedAll")
+    public ResponseEntity<String> embedAll() {
+        List<String>embeddingList = movieDocumentService.getAllMovies();
+        return ResponseEntity.ok("ez");
     }
 }
