@@ -96,8 +96,6 @@ public class FileImportService {
                 Movie existing = existingMovie.get();
 
                 newMovieData.setId(existing.getId());
-                newMovieData.setCreated(existing.getCreated());
-                newMovieData.setModified(LocalDateTime.now());
 
                 existing.getMovieActors().clear();
                 existing.getMovieCategories().clear();
@@ -119,7 +117,6 @@ public class FileImportService {
                 existing.setRatingCount(newMovieData.getRatingCount());
                 existing.setPosterUrl(newMovieData.getPosterUrl());
                 existing.setDirector(newMovieData.getDirector());
-                existing.setModified(LocalDateTime.now());
 
                 movieRepository.save(existing);
                 log.info("Updated existing movie: {} ({})", existing.getPolishTitle(), existing.getOriginalTitle());
