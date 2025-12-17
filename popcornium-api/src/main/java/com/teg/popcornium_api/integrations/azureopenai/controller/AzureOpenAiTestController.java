@@ -19,7 +19,6 @@ public class AzureOpenAiTestController {
 
     private final AiChatService aiChatService;
     private final AiEmbeddingService aiEmbeddingService;
-    private final ImdbFetcherService imdbFetcherService;
 
     @GetMapping("/chat")
     public ResponseEntity<String> chat() {
@@ -37,11 +36,5 @@ public class AzureOpenAiTestController {
     @GetMapping("/embedding")
     public ResponseEntity<String> embedding() {
         return ResponseEntity.ok(aiEmbeddingService.embed("TEST").toString());
-    }
-
-    @GetMapping("/imdb")
-    public ResponseEntity<Void> imdb() {
-        imdbFetcherService.alignMoviesData();
-        return ResponseEntity.ok().build();
     }
 }
