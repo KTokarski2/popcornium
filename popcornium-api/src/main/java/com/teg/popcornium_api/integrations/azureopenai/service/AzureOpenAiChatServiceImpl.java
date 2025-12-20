@@ -117,8 +117,6 @@ public class AzureOpenAiChatServiceImpl implements AiChatService {
                     ? objectMapper.writeValueAsString(request.metadata())
                     : null;
             Completion completion = new Completion();
-            completion.setCreated(now);
-            completion.setModified(now);
             completion.setModel(response.model());
             completion.setPrompt(fullPrompt);
             completion.setResponse(response.content());
