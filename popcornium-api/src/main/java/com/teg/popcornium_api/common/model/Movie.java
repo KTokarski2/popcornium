@@ -28,6 +28,9 @@ public class Movie extends AbstractEntity {
     @Column(name = "rating_count")
     private String ratingCount;
 
+    @Column(name = "poster_minio_id")
+    private String posterMinioId;
+
     @Column(name = "poster_url")
     private String posterUrl;
 
