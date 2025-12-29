@@ -1,6 +1,6 @@
 package com.teg.popcornium_api.common.repository;
 
-import com.teg.popcornium_api.common.model.ChunkType;
+import com.teg.popcornium_api.common.model.types.ChunkType;
 import com.teg.popcornium_api.common.model.Embedding;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;

@@ -1,4 +1,4 @@
-package com.teg.popcornium_api.common.model;
+package com.teg.popcornium_api.common.model.types;
 
 import lombok.Getter;
 

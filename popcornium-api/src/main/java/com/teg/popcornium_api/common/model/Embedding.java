@@ -1,5 +1,6 @@
 package com.teg.popcornium_api.common.model;
 
+import com.teg.popcornium_api.common.model.types.ChunkType;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;

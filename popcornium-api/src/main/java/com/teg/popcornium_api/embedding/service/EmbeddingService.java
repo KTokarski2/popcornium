@@ -1,8 +1,8 @@
 package com.teg.popcornium_api.embedding.service;
 
-import com.teg.popcornium_api.common.model.ChunkType;
+import com.teg.popcornium_api.common.model.types.ChunkType;
 import com.teg.popcornium_api.common.model.Embedding;
-import com.teg.popcornium_api.common.model.Language;
+import com.teg.popcornium_api.common.model.types.Language;
 import com.teg.popcornium_api.common.model.Movie;
 import com.teg.popcornium_api.common.repository.EmbeddingRepository;
 import com.teg.popcornium_api.common.repository.MovieRepository;
