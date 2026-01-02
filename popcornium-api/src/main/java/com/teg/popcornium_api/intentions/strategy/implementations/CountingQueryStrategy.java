@@ -3,6 +3,7 @@ package com.teg.popcornium_api.intentions.strategy.implementations;
 import com.teg.popcornium_api.common.model.dto.ChatMessage;
 import com.teg.popcornium_api.common.model.dto.ChatRequest;
 import com.teg.popcornium_api.intentions.model.Intention;
+import com.teg.popcornium_api.intentions.model.LlmContext;
 import com.teg.popcornium_api.intentions.strategy.QueryStrategy;
 import com.teg.popcornium_api.prompts.PromptLoader;
 import com.teg.popcornium_api.prompts.PromptRenderer;
@@ -25,17 +26,16 @@ public class CountingQueryStrategy implements QueryStrategy {
     }
 
     @Override
-    public ChatRequest buildChatRequest(String userQuery, String context, List<ChatMessage> history) {
+    public ChatRequest buildChatRequest(String userQuery, LlmContext context, List<ChatMessage> history) {
         String systemPrompt = promptLoader.load("counting/system.md");
         String executionTemplate = promptLoader.load("counting/execution.md");
         String userPrompt = promptRenderer.render(executionTemplate, Map.of(
                 "question", userQuery,
-                "context", context
+                "context", ""
         ));
         return ChatRequest.builder()
                 .systemPrompt(systemPrompt)
                 .userMessage(userPrompt)
-                .context(null)
                 .conversationHistory(history)
                 .temperature(0.0)
                 .maxTokens(300)

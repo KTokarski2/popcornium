@@ -6,6 +6,7 @@ import com.teg.popcornium_api.common.model.dto.ChatRequest;
 import com.teg.popcornium_api.common.model.dto.ChatResponse;
 import com.teg.popcornium_api.intentions.IntentionDetector;
 import com.teg.popcornium_api.intentions.model.Intention;
+import com.teg.popcornium_api.intentions.model.LlmContext;
 import com.teg.popcornium_api.intentions.strategy.QueryStrategy;
 import com.teg.popcornium_api.intentions.strategy.QueryStrategyRegistry;
 import lombok.RequiredArgsConstructor;
@@ -22,9 +23,9 @@ public class LlmService {
     private final AiChatService aiChatService;
 
     public ChatResponse handle(ChatQuery chatQuery, List<ChatMessage> history) {
+        LlmContext context = LlmContext.empty();
         Intention intention = intentionDetector.detect(chatQuery.query());
         QueryStrategy strategy = strategyRegistry.get(intention);
-        String context = "";
         ChatRequest chatRequest = strategy.buildChatRequest(chatQuery.query(), context, history);
         return aiChatService.chat(chatRequest);
     }
