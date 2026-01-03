@@ -8,6 +8,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 public interface EmbeddingRepository extends JpaRepository<Embedding, String> {
 
     Embedding findByMovieIdAndChunkType(String movieId, ChunkType chunkType);
@@ -24,4 +26,18 @@ public interface EmbeddingRepository extends JpaRepository<Embedding, String> {
             @Param("chunkContent") String chunkContent,
             @Param("vectorValue") String vectorValue
     );
+
+    @Query(value = """
+    SELECT *
+    FROM embedding
+    WHERE chunk_type IN (:chunkTypes)
+    ORDER BY vector <-> CAST(:queryVector AS vector)
+    LIMIT :limit
+    """, nativeQuery = true)
+    List<Embedding> findNearestByChunkTypes(
+            @Param("queryVector") String queryVector,
+            @Param("chunkTypes") List<String> chunkTypes,
+            @Param("limit") int limit
+    );
+
 }

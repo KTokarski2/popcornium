@@ -1,10 +1,7 @@
 package com.teg.popcornium_api.integrations.azureopenai.controller;
 
 import com.teg.popcornium_api.common.model.dto.ChatQuery;
-import com.teg.popcornium_api.common.model.dto.ChatRequest;
 import com.teg.popcornium_api.common.model.dto.ChatResponse;
-import com.teg.popcornium_api.common.service.AiChatService;
-import com.teg.popcornium_api.common.service.AiEmbeddingService;
 import com.teg.popcornium_api.common.service.LlmService;
 import com.teg.popcornium_api.embedding.service.EmbeddingService;
 import lombok.RequiredArgsConstructor;
