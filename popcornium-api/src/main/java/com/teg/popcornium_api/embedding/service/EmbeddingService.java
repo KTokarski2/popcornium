@@ -31,65 +31,63 @@ public class EmbeddingService {
         List<Movie> movies = movieRepository.findAllWithDetails();
 
         int embeddingsCount = 0;
+
         for (Movie movie : movies) {
             Map<ChunkType, String> chunks = createMovieChunks(movie);
+
             for (Map.Entry<ChunkType, String> entry : chunks.entrySet()) {
                 ChunkType chunkType = entry.getKey();
                 String content = entry.getValue();
 
-                List<Double> vectorList = aiEmbeddingService.embed(content);
-                persistEmbedding(movie, chunkType, content, vectorList);
+                float[] vector = aiEmbeddingService.embed(content);
+
+                Embedding embedding = embeddingRepository
+                        .findByMovieAndChunkType(movie, chunkType)
+                        .orElseGet(Embedding::new);
+
+                embedding.setMovie(movie);
+                embedding.setChunkType(chunkType);
+                embedding.setChunkContent(content);
+                embedding.setVectorValue(vector);
+
+                embeddingRepository.save(embedding);
                 embeddingsCount++;
             }
         }
-        log.info("Successfully generated and persisted {} embeddings for {} movies.", embeddingsCount, movies.size());
-    }
 
-    private void persistEmbedding(Movie movie, ChunkType chunkType, String chunkContent, List<Double> vectorList) {
-        String vectorString = vectorList.stream()
-                .map(d -> String.format("%.8f", d))
-                .collect(Collectors.joining(",", "[", "]"));
-
-        Embedding existingEmbedding = embeddingRepository.findByMovieIdAndChunkType(movie.getId(), chunkType);
-
-        if (existingEmbedding != null) {
-            existingEmbedding.setVectorValue(vectorString);
-            existingEmbedding.setChunkContent(chunkContent);
-            existingEmbedding.setMovie(movie);
-            embeddingRepository.save(existingEmbedding);
-        } else {
-            embeddingRepository.insertVectorNatively(
-                    java.util.UUID.randomUUID().toString(),
-                    movie.getId(),
-                    chunkType.name(),
-                    chunkContent,
-                    vectorString
-            );
-        }
+        log.info("Generated and persisted {} embeddings for {} movies",
+                embeddingsCount, movies.size());
     }
 
     private Map<ChunkType, String> createMovieChunks(Movie movie) {
         Map<ChunkType, String> chunks = new HashMap<>();
 
-//        String categories = movie.getMovieCategories().stream()
-//                .map(mc -> mc.getCategory().getName())
-//                .collect(Collectors.joining(", "));
+        String categories = movie.getMovieCategories().stream()
+                .map(mc -> mc.getCategory().getName())
+                .collect(Collectors.joining(", "));
 
         String metadataContent = String.format("""
-                        Title: %s (%d)
-                        Original Title: %s
-                        Director: %s
-                        """,
+                Title: %s (%d)
+                Original Title: %s
+                Director: %s
+                Categories: %s
+                """,
                 movie.getPolishTitle(),
                 movie.getProductionYear(),
                 movie.getOriginalTitle(),
-                movie.getDirector() != null ? movie.getDirector().getName() : "Unknown"
-//                categories
+                movie.getDirector() != null
+                        ? movie.getDirector().getName()
+                        : "Unknown",
+                categories
         );
+
         chunks.put(ChunkType.METADATA, metadataContent);
 
         String actorsContent = movie.getMovieActors().stream()
-                .map(ma -> ma.getActor().getName() + " (role: " + (ma.getRoleName() != null ? ma.getRoleName() : "N/A") + ")")
+                .map(ma -> ma.getActor().getName()
+                        + " (role: "
+                        + (ma.getRoleName() != null ? ma.getRoleName() : "N/A")
+                        + ")")
                 .limit(15)
                 .collect(Collectors.joining("; "));
 
@@ -98,11 +96,16 @@ public class EmbeddingService {
         movie.getDescriptions().stream()
                 .filter(d -> d.getLanguage() == Language.PL)
                 .findFirst()
-                .ifPresent(description -> {
-                    chunks.put(ChunkType.PLOT_SUMMARY, "Plot Summary: " + description.getText());
-                });
+                .ifPresent(d ->
+                        chunks.put(
+                                ChunkType.PLOT_SUMMARY,
+                                "Plot Summary: " + d.getText()
+                        )
+                );
+
         return chunks;
     }
 }
+
 
 

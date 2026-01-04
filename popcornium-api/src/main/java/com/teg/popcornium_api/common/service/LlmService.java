@@ -28,30 +28,21 @@ public class LlmService {
 
         Intention intention = intentionDetector.detect(chatQuery.query());
 
-        LlmContext context = LlmContext.empty();
+        String retrievedContext =
+                ragService.retrieveContext(chatQuery.query(), intention);
 
-        if (supportsRag(intention)) {
-            String retrievedContext = ragService.retrieveContext(chatQuery.query(), intention);
-            if (!retrievedContext.isBlank()) {
-                context.setRetrievedContext(retrievedContext);
-            }
-        }
+        LlmContext context = LlmContext.empty();
+        context.setRetrievedContext(retrievedContext);
 
         QueryStrategy strategy = strategyRegistry.get(intention);
 
-        ChatRequest chatRequest = strategy.buildChatRequest(
-                chatQuery.query(),
-                context,
-                history
-        );
-        return aiChatService.chat(chatRequest);
-    }
+        ChatRequest chatRequest =
+                strategy.buildChatRequest(
+                        chatQuery.query(),
+                        context,
+                        history
+                );
 
-    private boolean supportsRag(Intention intention) {
-        return switch (intention) {
-            case GENERAL, REASONING, AGGREGATION, TEMPORAL -> true;
-            case COUNTING, FILTERING -> false;
-            default -> false;
-        };
+        return aiChatService.chat(chatRequest);
     }
 }

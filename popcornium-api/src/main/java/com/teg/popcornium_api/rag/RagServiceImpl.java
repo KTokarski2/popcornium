@@ -30,15 +30,11 @@ public class RagServiceImpl implements RagService {
         int limit = resolveLimit(intention);
         Set<ChunkType> chunkTypes = resolveChunkTypes(intention);
 
-        List<Double> queryVector = aiEmbeddingService.embed(userQuery);
-
-        String vectorString = queryVector.stream()
-                .map(d -> String.format("%.8f", d))
-                .collect(Collectors.joining(",", "[", "]"));
+        float[] queryVector = aiEmbeddingService.embed(userQuery);
 
         List<Embedding> results =
                 embeddingRepository.findNearestByChunkTypes(
-                        vectorString,
+                        queryVector,
                         chunkTypes.stream().map(Enum::name).toList(),
                         limit
                 );
@@ -47,7 +43,6 @@ public class RagServiceImpl implements RagService {
             return "";
         }
 
-        // Grupowanie po Movie
         Map<Movie, List<Embedding>> byMovie = results.stream()
                 .filter(e -> e.getMovie() != null)
                 .collect(Collectors.groupingBy(Embedding::getMovie));

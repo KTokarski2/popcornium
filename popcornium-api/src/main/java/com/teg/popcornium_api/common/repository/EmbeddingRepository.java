@@ -1,41 +1,23 @@
 package com.teg.popcornium_api.common.repository;
 
-import com.teg.popcornium_api.common.model.types.ChunkType;
 import com.teg.popcornium_api.common.model.Embedding;
+import com.teg.popcornium_api.common.model.Movie;
+import com.teg.popcornium_api.common.model.types.ChunkType;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface EmbeddingRepository extends JpaRepository<Embedding, String> {
 
-    Embedding findByMovieIdAndChunkType(String movieId, ChunkType chunkType);
+    Optional<Embedding> findByMovieAndChunkType(Movie movie, ChunkType chunkType);
 
-    @Modifying
-    @Transactional
-    @Query(value = "INSERT INTO embedding (id, movie_id, chunk_type, chunk_content, vector_value, created, modified) " +
-            "VALUES (:id, :movieId, :chunkType, CAST(:chunkContent AS TEXT), CAST(:vectorValue AS vector), now(), now())",
-            nativeQuery = true)
-    void insertVectorNatively(
-            @Param("id") String id,
-            @Param("movieId") String movieId,
-            @Param("chunkType") String chunkType,
-            @Param("chunkContent") String chunkContent,
-            @Param("vectorValue") String vectorValue
-    );
-
-    @Query(value = """
-    SELECT *
-    FROM embedding
-    WHERE chunk_type IN (:chunkTypes)
-    ORDER BY vector <-> CAST(:queryVector AS vector)
-    LIMIT :limit
-    """, nativeQuery = true)
+    @Query(value = "SELECT * FROM embeddingWHERE chunk_type IN (:chunkTypes)ORDER BY " +
+            "vector_value <-> CAST(:queryVector AS vector) LIMIT :limit", nativeQuery = true)
     List<Embedding> findNearestByChunkTypes(
-            @Param("queryVector") String queryVector,
+            @Param("queryVector") float[] queryVector,
             @Param("chunkTypes") List<String> chunkTypes,
             @Param("limit") int limit
     );
