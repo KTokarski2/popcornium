@@ -26,7 +26,7 @@ public class CountingQueryStrategy implements QueryStrategy {
     }
 
     @Override
-    public ChatRequest buildChatRequest(String userQuery, LlmContext context, List<ChatMessage> history) {
+    public ChatRequest executeStrategy(String userQuery, LlmContext context, List<ChatMessage> history) {
         String systemPrompt = promptLoader.load("counting/system.md");
         String executionTemplate = promptLoader.load("counting/execution.md");
         String userPrompt = promptRenderer.render(executionTemplate, Map.of(

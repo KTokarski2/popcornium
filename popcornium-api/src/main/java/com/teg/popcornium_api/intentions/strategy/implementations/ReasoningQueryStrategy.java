@@ -26,7 +26,7 @@ public class ReasoningQueryStrategy implements QueryStrategy {
     }
 
     @Override
-    public ChatRequest buildChatRequest(String userQuery, LlmContext context, List<ChatMessage> history) {
+    public ChatRequest executeStrategy(String userQuery, LlmContext context, List<ChatMessage> history) {
         String systemPrompt = promptLoader.load("reasoning/system.md");
         String executionTemplate = promptLoader.load("reasoning/execution.md");
         String userPrompt = promptRenderer.render(executionTemplate, Map.of(

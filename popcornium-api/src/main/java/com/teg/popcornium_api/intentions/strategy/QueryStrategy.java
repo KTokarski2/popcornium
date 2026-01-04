@@ -11,5 +11,5 @@ public interface QueryStrategy {
 
     Intention getIntention();
 
-    ChatRequest buildChatRequest(String userQuery, LlmContext context, List<ChatMessage> history);
+    ChatRequest executeStrategy(String userQuery, LlmContext context, List<ChatMessage> history);
 }

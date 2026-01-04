@@ -26,7 +26,7 @@ public class TemporalQueryStrategy implements QueryStrategy {
     }
 
     @Override
-    public ChatRequest buildChatRequest(String userQuery, LlmContext context, List<ChatMessage> history) {
+    public ChatRequest executeStrategy(String userQuery, LlmContext context, List<ChatMessage> history) {
         String systemPrompt = promptLoader.load("temporal/system.md");
         String executionTemplate = promptLoader.load("temporal/execution.md");
         String userPrompt = promptRenderer.render(executionTemplate, Map.of(

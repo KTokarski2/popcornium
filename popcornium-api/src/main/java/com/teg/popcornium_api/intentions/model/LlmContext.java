@@ -11,7 +11,7 @@ import java.util.Map;
 public class LlmContext {
 
     private String retrievedContext;
-
+    private Intention detectedBaseIntention;
     private Map<String, Object> attributes = new HashMap<>();
 
     public boolean hasRetrievedContext() {
