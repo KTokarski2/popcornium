@@ -28,4 +28,13 @@ public interface MovieRepository extends JpaRepository<Movie, String> {
             "LEFT JOIN FETCH m.descriptions " +
             "WHERE m.id = :id")
     Optional<Movie> findByIdWithCategories(@Param("id") String id);
+
+    @Query("""
+    SELECT DISTINCT m FROM Movie m
+    LEFT JOIN FETCH m.movieActors
+    LEFT JOIN FETCH m.movieCategories mc
+    LEFT JOIN FETCH mc.category
+    LEFT JOIN FETCH m.director
+""")
+    List<Movie> findAllWithGraphData();
 }
