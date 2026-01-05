@@ -1,14 +1,10 @@
 package com.teg.popcornium_api.common.neo4jmodel;
 
-import lombok.Getter;
-import lombok.Setter;
-import org.springframework.data.neo4j.core.schema.GeneratedValue;
+import lombok.Data;
 import org.springframework.data.neo4j.core.schema.Id;
 
-@Getter
-@Setter
+@Data
 public abstract class AbstractNode {
     @Id
-    @GeneratedValue
-    private Long neo4jId;
+    private String id; // We'll use JPA entity UUID as id
 }
