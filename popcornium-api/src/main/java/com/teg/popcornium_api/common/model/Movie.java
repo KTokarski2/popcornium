@@ -28,10 +28,13 @@ public class Movie extends AbstractEntity {
     @Column(name = "rating_count")
     private String ratingCount;
 
+    @Column(name = "poster_minio_id")
+    private String posterMinioId;
+
     @Column(name = "poster_url")
     private String posterUrl;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.PERSIST)
     @JoinColumn(name = "director_id")
     private Director director;
 
@@ -46,4 +49,15 @@ public class Movie extends AbstractEntity {
 
     @OneToMany(mappedBy = "movie", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Description> descriptions = new HashSet<>();
+
+    public void addCategory(Category category) {
+        boolean alreadyAdded = movieCategories.stream()
+                .anyMatch(mc -> mc.getCategory().equals(category));
+        if (!alreadyAdded) {
+            MovieCategory mc = new MovieCategory();
+            mc.setMovie(this);
+            mc.setCategory(category);
+            movieCategories.add(mc);
+        }
+    }
 }

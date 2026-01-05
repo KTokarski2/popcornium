@@ -4,6 +4,8 @@ import com.teg.popcornium_api.common.repository.MovieRepository;
 import com.teg.popcornium_api.integrations.wikipedia.exception.ArticleNotFoundException;
 import com.teg.popcornium_api.integrations.wikipedia.service.api.WikipediaApiService;
 import com.teg.popcornium_api.seeder.filmweb.service.FileImportService;
+import com.teg.popcornium_api.seeder.filmweb.service.ImdbFetcherService;
+import com.teg.popcornium_api.seeder.filmweb.service.WikipediaFetcherService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -18,6 +20,8 @@ public class DataInitializer {
     private final FileImportService fileImportService;
     private final MovieRepository movieRepository;
     private final WikipediaApiService wikipediaApiService;
+    private final WikipediaFetcherService wikipediaFetcherService;
+    private final ImdbFetcherService imdbFetcherService;
 
     @EventListener(ApplicationReadyEvent.class)
     public void seedData() {
@@ -27,6 +31,10 @@ public class DataInitializer {
             log.info("Automated seeding finished. Imported {} movies.", importedCount);
             log.info("Fetching wikipedia articles for added movies...");
             fetchWikipediaArticles();
+            log.info("Fetching missing movie data from IMDB...");
+            imdbFetcherService.alignMoviesData();
+            int articles = wikipediaFetcherService.fetchAndSaveWikipediaArticles();
+            log.info("Automated wikipedia fetch finished. Imported {} articles.", articles);
             log.info("Data feed succeed...");
         } else {
             log.info("Movie database already contains data. Skipping seeding process.");

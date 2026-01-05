@@ -12,6 +12,7 @@ import java.util.Set;
 @Node("Movie")
 @Data
 public class MovieNode {
+
     @Id
     private String id;
 

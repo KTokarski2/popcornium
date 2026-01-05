@@ -14,7 +14,6 @@ import java.util.Set;
 public class CategoryNode extends AbstractNode {
     private String name;
 
-    // Optional: connect categories that appear together
     @Relationship(type = "CO_OCCURS_WITH")
     private Set<CategoryNode> coOccurring = new HashSet<>();
 }
