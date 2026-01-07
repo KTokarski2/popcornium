@@ -31,8 +31,8 @@ public class AggregationQueryStrategy implements QueryStrategy {
         String executionTemplate = promptLoader.load("aggregation/execution.md");
         String userPrompt = promptRenderer.render(executionTemplate, Map.of(
                 "query", userQuery,
-                "context", context.hasRetrievedContext() ?
-                        context.getRetrievedContext() : ""
+                "context", context.hasFinalContext() ?
+                        context.getFinalContext() : ""
         ));
         return ChatRequest.builder()
                 .systemPrompt(systemPrompt)

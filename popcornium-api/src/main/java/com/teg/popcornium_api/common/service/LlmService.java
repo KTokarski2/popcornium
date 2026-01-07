@@ -6,6 +6,7 @@ import com.teg.popcornium_api.common.model.dto.ChatRequest;
 import com.teg.popcornium_api.common.model.dto.ChatResponse;
 import com.teg.popcornium_api.intentions.ComplexExecutionPlanner;
 import com.teg.popcornium_api.intentions.IntentionDetector;
+import com.teg.popcornium_api.intentions.model.ExecutionStep;
 import com.teg.popcornium_api.intentions.model.Intention;
 import com.teg.popcornium_api.intentions.model.LlmContext;
 import com.teg.popcornium_api.intentions.strategy.QueryStrategy;
@@ -36,13 +37,14 @@ public class LlmService {
     }
 
     private ChatResponse handleComplex(String userQuery, LlmContext context, List<ChatMessage> history) {
-        List<Intention> plan = executionPlanner.plan(userQuery);
+        List<ExecutionStep> plan = executionPlanner.plan(userQuery);
         plan.forEach(step -> {
-            QueryStrategy strategy = strategyRegistry.get(step);
-            ChatRequest request = strategy.executeStrategy(userQuery, context, history);
+            QueryStrategy strategy = strategyRegistry.get(step.intention());
+            ChatRequest request = strategy.executeStrategy(step.stepQuery(), context, history);
             ChatResponse response = aiChatService.chat(request);
-            context.putAttribute(step.name(), response.content());
+            context.putAttribute(step.intention().name(), response.content());
         });
+        context.buildFinalContext();
         QueryStrategy general = strategyRegistry.get(Intention.GENERAL);
         ChatRequest finalRequest = general.executeStrategy(userQuery, context, history);
         return aiChatService.chat(finalRequest);
