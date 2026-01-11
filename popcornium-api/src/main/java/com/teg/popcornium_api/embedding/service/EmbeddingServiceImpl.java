@@ -69,12 +69,13 @@ public class EmbeddingServiceImpl implements EmbeddingService{
         String metadataContent = String.format("""
                 Title: %s (%d)
                 Original Title: %s
+                Production Year: %s
                 Director: %s
                 Categories: %s
                 """,
                 movie.getPolishTitle(),
-                movie.getProductionYear(),
                 movie.getOriginalTitle(),
+                movie.getProductionYear(),
                 movie.getDirector() != null
                         ? movie.getDirector().getName()
                         : "Unknown",

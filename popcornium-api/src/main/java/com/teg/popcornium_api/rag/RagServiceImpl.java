@@ -49,6 +49,9 @@ public class RagServiceImpl implements RagService {
 
         StringBuilder context = new StringBuilder();
         context.append("KONTEKST FILMOWY:\n\n");
+        if (intention == Intention.COUNTING || intention == Intention.FILTERING) {
+            context.append("TRYB: ZLICZANIE\n\n");
+        }
 
         for (Map.Entry<Movie, List<Embedding>> entry : byMovie.entrySet()) {
             Movie movie = entry.getKey();
@@ -76,6 +79,8 @@ public class RagServiceImpl implements RagService {
 
     private int resolveLimit(Intention intention) {
         return switch (intention) {
+            case COUNTING -> 50;
+            case FILTERING -> 25;
             case AGGREGATION -> 20;
             case TEMPORAL -> 15;
             case REASONING -> 12;
@@ -85,12 +90,25 @@ public class RagServiceImpl implements RagService {
 
     private Set<ChunkType> resolveChunkTypes(Intention intention) {
         return switch (intention) {
-            case TEMPORAL -> Set.of(ChunkType.METADATA);
-            case REASONING -> Set.of(ChunkType.PLOT_SUMMARY);
+
+            case COUNTING, TEMPORAL -> Set.of(
+                    ChunkType.METADATA
+            );
+
+            case FILTERING -> Set.of(
+                    ChunkType.CAST,
+                    ChunkType.METADATA
+            );
+
+            case REASONING -> Set.of(
+                    ChunkType.PLOT_SUMMARY
+            );
+
             case AGGREGATION -> Set.of(
                     ChunkType.METADATA,
                     ChunkType.PLOT_SUMMARY
             );
+
             default -> Set.of(
                     ChunkType.METADATA,
                     ChunkType.CAST,
@@ -98,4 +116,5 @@ public class RagServiceImpl implements RagService {
             );
         };
     }
+
 }
