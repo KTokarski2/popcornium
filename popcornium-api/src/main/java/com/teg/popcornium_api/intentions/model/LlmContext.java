@@ -11,19 +11,19 @@ import java.util.Map;
 public class LlmContext {
 
     private Intention detectedBaseIntention;
-    private Map<String, Object> attributes = new HashMap<>();
+    private Map<String, String> attributes = new HashMap<>();
     private String finalContext;
 
     public boolean hasFinalContext() {
         return finalContext != null && !finalContext.isBlank();
     }
 
-    public void putAttribute(String key, Object value) {
+    public void putAttribute(String key, String value) {
         attributes.put(key, value);
     }
 
-    public <T> T getAttribute(String key) {
-        return (T) attributes.get(key);
+    public String getAttribute(String key) {
+        return attributes.get(key);
     }
 
     public boolean hasAttribute(String key) {

@@ -8,7 +8,7 @@ import com.teg.popcornium_api.intentions.ComplexExecutionPlanner;
 import com.teg.popcornium_api.intentions.IntentionDetector;
 import com.teg.popcornium_api.intentions.model.ExecutionStep;
 import com.teg.popcornium_api.intentions.model.Intention;
-import com.teg.popcornium_api.intentions.model.LlmContext;
+import com.teg.popcornium_api.intentions.service.LlmContextHandler;
 import com.teg.popcornium_api.intentions.strategy.QueryStrategy;
 import com.teg.popcornium_api.intentions.strategy.QueryStrategyRegistry;
 import lombok.RequiredArgsConstructor;
@@ -20,33 +20,50 @@ import java.util.List;
 @RequiredArgsConstructor
 public class LlmService {
 
-    private final IntentionDetector intentionDetector;
     private final QueryStrategyRegistry strategyRegistry;
     private final AiChatService aiChatService;
     private final ComplexExecutionPlanner executionPlanner;
+    private final LlmContextHandler contextHandler;
 
     public ChatResponse handle(ChatQuery chatQuery, List<ChatMessage> history) {
-        LlmContext context = LlmContext.empty();
-        context.setDetectedBaseIntention(intentionDetector.detect(chatQuery.query()));
-        if (context.getDetectedBaseIntention() == Intention.COMPLEX) {
-            return handleComplex(chatQuery.query(), context, history);
+        contextHandler.createFreshContext(chatQuery.query());
+        if (contextHandler.getBaseIntention() == Intention.COMPLEX) {
+            return handleComplex(chatQuery.query(), history);
         }
-        QueryStrategy strategy = strategyRegistry.get(context.getDetectedBaseIntention());
-        ChatRequest chatRequest = strategy.executeStrategy(chatQuery.query(), context, history);
+        QueryStrategy strategy = strategyRegistry.get(contextHandler.getBaseIntention());
+        ChatRequest chatRequest = strategy.executeStrategy(
+                chatQuery.query(),
+                contextHandler.handleBaseIntentionContext(chatQuery.query()),
+                history
+        );
         return aiChatService.chat(chatRequest);
     }
 
-    private ChatResponse handleComplex(String userQuery, LlmContext context, List<ChatMessage> history) {
+    private ChatResponse handleComplex(String userQuery, List<ChatMessage> history) {
         List<ExecutionStep> plan = executionPlanner.plan(userQuery);
         plan.forEach(step -> {
             QueryStrategy strategy = strategyRegistry.get(step.intention());
-            ChatRequest request = strategy.executeStrategy(step.stepQuery(), context, history);
+            contextHandler.setCurrentStep(step);
+            ChatRequest request = strategy.executeStrategy(
+                    userQuery,
+                    contextHandler.handleComplexIntentionContext(userQuery),
+                    history
+            );
             ChatResponse response = aiChatService.chat(request);
-            context.putAttribute(step.intention().name(), response.content());
+            addPartialResponseToContext(step, response.content());
         });
-        context.buildFinalContext();
-        QueryStrategy general = strategyRegistry.get(Intention.GENERAL);
-        ChatRequest finalRequest = general.executeStrategy(userQuery, context, history);
+        QueryStrategy strategy = strategyRegistry.get(Intention.GENERAL);
+        ChatRequest finalRequest = strategy.executeStrategy(
+                userQuery,
+                contextHandler.buildFinalComplexContext(),
+                history
+        );
         return aiChatService.chat(finalRequest);
+    }
+
+    private void addPartialResponseToContext(ExecutionStep step, String response) {
+        if (!response.isBlank()) {
+            this.contextHandler.addPartialToContext(step.outputKey(), response);
+        }
     }
 }

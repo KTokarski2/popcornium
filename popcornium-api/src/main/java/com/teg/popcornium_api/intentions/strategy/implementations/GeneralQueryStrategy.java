@@ -3,7 +3,6 @@ package com.teg.popcornium_api.intentions.strategy.implementations;
 import com.teg.popcornium_api.common.model.dto.ChatMessage;
 import com.teg.popcornium_api.common.model.dto.ChatRequest;
 import com.teg.popcornium_api.intentions.model.Intention;
-import com.teg.popcornium_api.intentions.model.LlmContext;
 import com.teg.popcornium_api.intentions.strategy.QueryStrategy;
 import com.teg.popcornium_api.prompts.PromptLoader;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +10,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
@@ -24,12 +24,11 @@ public class GeneralQueryStrategy implements QueryStrategy {
     }
 
     @Override
-    public ChatRequest executeStrategy(String userQuery, LlmContext context, List<ChatMessage> history) {
+    public ChatRequest executeStrategy(String userQuery, Optional<String> context, List<ChatMessage> history) {
         return ChatRequest.builder()
                 .systemPrompt(promptLoader.load("general/system.md"))
                 .userMessage(userQuery)
-                .context(context.hasFinalContext()
-                    ? context.getFinalContext() : null)
+                .context(context.orElse(""))
                 .temperature(0.7)
                 .maxTokens(800)
                 .metadata(Map.of("intention", "GENERAL"))

@@ -8,5 +8,6 @@ public record ExecutionStep(
         Intention intention,
         @JsonProperty("query") String stepQuery,
         List<String> dependsOn,
-        String outputKey
+        String outputKey,
+        Boolean allowRag
 ) {}

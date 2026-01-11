@@ -7,6 +7,7 @@ Rules:
 - Each step must declare:
     - what it produces (outputKey)
     - what previous outputs it depends on (dependsOn)
+    - if it should do own rag retrieval or use other step knowledge or both
 - Steps MUST NOT assume implicit knowledge
 - If a step refers to "this", "that", or "the result", it MUST declare a dependency
 - Queries must be scoped ONLY to the step responsibility

@@ -17,7 +17,8 @@ Each step MUST follow this schema:
 "intention": "FILTERING | COUNTING | AGGREGATION | TEMPORAL | REASONING",
 "query": "precise task description for this step only",
 "dependsOn": ["OUTPUT_KEY_1", "OUTPUT_KEY_2"],
-"outputKey": "UNIQUE_RESULT_NAME"
+"outputKey": "UNIQUE_RESULT_NAME", 
+"allowRag": true | false
 }
 ```
 
