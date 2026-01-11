@@ -1,4 +1,4 @@
-package com.teg.popcornium_api.config;
+package com.teg.popcornium_api.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

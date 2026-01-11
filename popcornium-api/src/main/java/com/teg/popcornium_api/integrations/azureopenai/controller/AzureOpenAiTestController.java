@@ -3,7 +3,7 @@ package com.teg.popcornium_api.integrations.azureopenai.controller;
 import com.teg.popcornium_api.common.model.dto.ChatQuery;
 import com.teg.popcornium_api.common.model.dto.ChatResponse;
 import com.teg.popcornium_api.common.service.LlmService;
-import com.teg.popcornium_api.embedding.service.EmbeddingService;
+import com.teg.popcornium_api.embedding.service.api.EmbeddingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
