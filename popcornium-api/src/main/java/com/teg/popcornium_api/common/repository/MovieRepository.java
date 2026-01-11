@@ -19,7 +19,8 @@ public interface MovieRepository extends JpaRepository<Movie, String> {
             "LEFT JOIN FETCH ma.actor a " +
             "LEFT JOIN FETCH m.movieCategories mc " +
             "LEFT JOIN FETCH mc.category c " +
-            "LEFT JOIN FETCH m.director dir")
+            "LEFT JOIN FETCH m.director dir" +
+            "LEFT JOIN FETCH m.wikipediaArticles wa")
     List<Movie> findAllWithDetails();
 
     @Query("SELECT DISTINCT m FROM Movie m " +

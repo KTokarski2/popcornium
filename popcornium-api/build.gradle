@@ -40,6 +40,7 @@ dependencies {
     implementation 'org.springframework.ai:spring-ai-starter-vector-store-pgvector'
     implementation 'me.paulschwarz:spring-dotenv:4.0.0'
     implementation 'io.minio:minio:8.6.0'
+    implementation "org.hibernate.orm:hibernate-vector:6.4.4.Final"
 
     compileOnly 'org.projectlombok:lombok'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
