@@ -4,5 +4,5 @@ public enum ChunkType {
     METADATA,
     CAST,
     PLOT_SUMMARY,
-    ADDITIONAL_DESCRIPTION
+    WIKIPEDIA_ARTICLE
 }
