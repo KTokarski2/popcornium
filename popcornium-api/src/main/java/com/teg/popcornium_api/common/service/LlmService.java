@@ -1,11 +1,11 @@
 package com.teg.popcornium_api.common.service;
 
+import com.azure.json.implementation.jackson.core.JsonProcessingException;
 import com.teg.popcornium_api.common.model.dto.ChatMessage;
 import com.teg.popcornium_api.common.model.dto.ChatQuery;
 import com.teg.popcornium_api.common.model.dto.ChatRequest;
 import com.teg.popcornium_api.common.model.dto.ChatResponse;
 import com.teg.popcornium_api.intentions.ComplexExecutionPlanner;
-import com.teg.popcornium_api.intentions.IntentionDetector;
 import com.teg.popcornium_api.intentions.model.ExecutionStep;
 import com.teg.popcornium_api.intentions.model.Intention;
 import com.teg.popcornium_api.intentions.service.LlmContextHandler;
@@ -20,50 +20,72 @@ import java.util.List;
 @RequiredArgsConstructor
 public class LlmService {
 
+    private static final String ERROR_JSON_PROCESSING = "JSON processing error during LLM request handling";
+    private static final String ERROR_COMPLEX_JSON = "JSON processing error during complex intention execution";
+
     private final QueryStrategyRegistry strategyRegistry;
     private final AiChatService aiChatService;
     private final ComplexExecutionPlanner executionPlanner;
     private final LlmContextHandler contextHandler;
 
     public ChatResponse handle(ChatQuery chatQuery, List<ChatMessage> history) {
-        contextHandler.createFreshContext(chatQuery.query());
-        if (contextHandler.getBaseIntention() == Intention.COMPLEX) {
-            return handleComplex(chatQuery.query(), history);
+        try {
+            contextHandler.createFreshContext(chatQuery.query());
+
+            if (contextHandler.getBaseIntention() == Intention.COMPLEX) {
+                return handleComplex(chatQuery.query(), history);
+            }
+
+            QueryStrategy strategy = strategyRegistry.get(contextHandler.getBaseIntention());
+            ChatRequest request = strategy.executeStrategy(
+                    chatQuery.query(),
+                    contextHandler.handleBaseIntentionContext(chatQuery.query(), contextHandler.getBaseIntention()),
+                    history
+            );
+
+            return aiChatService.chat(request);
+
+        } catch (JsonProcessingException | com.fasterxml.jackson.core.JsonProcessingException e) {
+            throw new RuntimeException(ERROR_JSON_PROCESSING, e);
         }
-        QueryStrategy strategy = strategyRegistry.get(contextHandler.getBaseIntention());
-        ChatRequest chatRequest = strategy.executeStrategy(
-                chatQuery.query(),
-                contextHandler.handleBaseIntentionContext(chatQuery.query()),
-                history
-        );
-        return aiChatService.chat(chatRequest);
     }
 
     private ChatResponse handleComplex(String userQuery, List<ChatMessage> history) {
-        List<ExecutionStep> plan = executionPlanner.plan(userQuery);
-        plan.forEach(step -> {
-            QueryStrategy strategy = strategyRegistry.get(step.intention());
-            contextHandler.setCurrentStep(step);
-            ChatRequest request = strategy.executeStrategy(
+        try {
+            List<ExecutionStep> plan = executionPlanner.plan(userQuery);
+
+            for (ExecutionStep step : plan) {
+                contextHandler.setCurrentStep(step);
+                QueryStrategy strategy = strategyRegistry.get(step.intention());
+
+                ChatRequest request = strategy.executeStrategy(
+                        userQuery,
+                        contextHandler.handleComplexIntentionContext(userQuery),
+                        history
+                );
+
+                ChatResponse response = aiChatService.chat(request);
+                addPartialResponseToContext(step, response.content());
+            }
+
+            QueryStrategy finalStrategy = strategyRegistry.get(Intention.GENERAL);
+            ChatRequest finalRequest = finalStrategy.executeStrategy(
                     userQuery,
-                    contextHandler.handleComplexIntentionContext(userQuery),
+                    contextHandler.buildFinalComplexContext(),
                     history
             );
-            ChatResponse response = aiChatService.chat(request);
-            addPartialResponseToContext(step, response.content());
-        });
-        QueryStrategy strategy = strategyRegistry.get(Intention.GENERAL);
-        ChatRequest finalRequest = strategy.executeStrategy(
-                userQuery,
-                contextHandler.buildFinalComplexContext(),
-                history
-        );
-        return aiChatService.chat(finalRequest);
+
+            return aiChatService.chat(finalRequest);
+
+        } catch (JsonProcessingException | com.fasterxml.jackson.core.JsonProcessingException e) {
+            throw new RuntimeException(ERROR_COMPLEX_JSON, e);
+        }
     }
 
     private void addPartialResponseToContext(ExecutionStep step, String response) {
-        if (!response.isBlank()) {
-            this.contextHandler.addPartialToContext(step.outputKey(), response);
+        if (response == null || response.isBlank()) {
+            return;
         }
+        contextHandler.addPartialToContext(step.outputKey(), response);
     }
 }

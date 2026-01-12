@@ -67,7 +67,7 @@ public class EmbeddingServiceImpl implements EmbeddingService{
                 .collect(Collectors.joining(", "));
 
         String metadataContent = String.format("""
-                Title: %s (%d)
+                Title: %s
                 Original Title: %s
                 Production Year: %s
                 Director: %s
@@ -103,9 +103,18 @@ public class EmbeddingServiceImpl implements EmbeddingService{
                                 "Plot Summary: " + d.getText()
                         )
                 );
-        movie.getWikipediaArticles().stream().findFirst().ifPresent( aw ->
-                chunks.put(ChunkType.WIKIPEDIA_ARTICLE,
-                        "Wikipedia Article: " + aw.getText()));
+        movie.getWikipediaArticles().stream()
+                .findFirst()
+                .ifPresent(aw -> {
+                    String articleText = aw.getText();
+                    int maxChars = 20000;
+                    String truncated = articleText.length() > maxChars
+                            ? articleText.substring(0, maxChars) + "..."
+                            : articleText;
+
+                    chunks.put(ChunkType.WIKIPEDIA_ARTICLE,
+                            "Wikipedia Article: " + truncated);
+                });
 
         return chunks;
     }

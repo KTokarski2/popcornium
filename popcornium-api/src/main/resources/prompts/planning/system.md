@@ -12,4 +12,5 @@ Rules:
 - If a step refers to "this", "that", or "the result", it MUST declare a dependency
 - Queries must be scoped ONLY to the step responsibility
 - Do NOT repeat the full user question
+- Plan should contain maximum one step of each type, do not create too complex plans
 - Return ONLY valid JSON

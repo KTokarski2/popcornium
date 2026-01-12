@@ -4,6 +4,7 @@ import com.teg.popcornium_api.intentions.IntentionDetector;
 import com.teg.popcornium_api.intentions.model.ExecutionStep;
 import com.teg.popcornium_api.intentions.model.Intention;
 import com.teg.popcornium_api.intentions.model.LlmContext;
+import com.teg.popcornium_api.rag.api.RagService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -15,6 +16,7 @@ import java.util.stream.Collectors;
 public class LlmContextHandler {
 
     private final IntentionDetector intentionDetector;
+    private final RagService ragService;
     private LlmContext llmContext;
     private Optional<ExecutionStep> step;
 
@@ -30,9 +32,9 @@ public class LlmContextHandler {
         return llmContext.getDetectedBaseIntention();
     }
 
-    public Optional<String> handleBaseIntentionContext(String userQuery) {
+    public Optional<String> handleBaseIntentionContext(String userQuery, Intention intention) {
         if (baseShouldRag()) {
-            llmContext.setFinalContext(doNormalRag(userQuery));
+            llmContext.setFinalContext(doNormalRag(userQuery, intention));
             return Optional.of(llmContext.getFinalContext());
         }
         return Optional.empty();
@@ -65,8 +67,8 @@ public class LlmContextHandler {
         return llmContext.getDetectedBaseIntention() != Intention.FILTERING;
     }
 
-    private String doNormalRag(String userQuery) {
-        return "";
+    private String doNormalRag(String userQuery, Intention intention) {
+        return ragService.retrieveContext(userQuery, intention);
     }
 
     private String doGraphRag() {
@@ -82,7 +84,7 @@ public class LlmContextHandler {
         if (!step.allowRag()) {
             return Optional.empty();
         }
-        String ragContext = doNormalRag(userQuery);
+        String ragContext = doNormalRag(userQuery, step.intention());
         return ragContext.isBlank() ? Optional.empty() : Optional.of(ragContext);
     }
 

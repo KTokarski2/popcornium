@@ -1,5 +1,6 @@
 package com.teg.popcornium_api.integrations.azureopenai.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.teg.popcornium_api.common.model.dto.ChatQuery;
 import com.teg.popcornium_api.common.model.dto.ChatRequest;
 import com.teg.popcornium_api.common.model.dto.ChatResponse;
@@ -22,7 +23,7 @@ public class AzureOpenAiTestController {
     private final EmbeddingService embeddingService;
 
     @PostMapping("/chat")
-    public ResponseEntity<ChatResponse> chat(@RequestBody ChatQuery query) {
+    public ResponseEntity<ChatResponse> chat(@RequestBody ChatQuery query) throws JsonProcessingException, com.azure.json.implementation.jackson.core.JsonProcessingException {
         return ResponseEntity.ok(llmService.handle(query, null));
     }
 
