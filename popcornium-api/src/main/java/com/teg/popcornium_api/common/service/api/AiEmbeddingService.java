@@ -1,4 +1,4 @@
-package com.teg.popcornium_api.common.service;
+package com.teg.popcornium_api.common.service.api;
 
 import java.util.List;
 

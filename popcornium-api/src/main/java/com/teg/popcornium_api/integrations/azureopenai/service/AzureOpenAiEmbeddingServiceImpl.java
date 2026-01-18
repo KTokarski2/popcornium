@@ -1,6 +1,6 @@
 package com.teg.popcornium_api.integrations.azureopenai.service;
 
-import com.teg.popcornium_api.common.service.AiEmbeddingService;
+import com.teg.popcornium_api.common.service.api.AiEmbeddingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.azure.openai.AzureOpenAiEmbeddingModel;
