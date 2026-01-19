@@ -10,23 +10,42 @@ import java.util.Map;
 @Setter
 public class LlmContext {
 
-    private String retrievedContext;
+    private Intention detectedBaseIntention;
+    private Map<String, String> attributes = new HashMap<>();
+    private String finalContext;
 
-    private Map<String, Object> attributes = new HashMap<>();
-
-    public boolean hasRetrievedContext() {
-        return retrievedContext != null && !retrievedContext.isBlank();
+    public boolean hasFinalContext() {
+        return finalContext != null && !finalContext.isBlank();
     }
 
-    public void putAttribute(String key, Object value) {
+    public void putAttribute(String key, String value) {
         attributes.put(key, value);
     }
 
-    public <T> T getAttribute(String key) {
-        return (T) attributes.get(key);
+    public String getAttribute(String key) {
+        return attributes.get(key);
+    }
+
+    public boolean hasAttribute(String key) {
+        return attributes.containsKey(key);
+    }
+
+    public boolean hasAny() {
+        return !attributes.isEmpty();
     }
 
     public static LlmContext empty() {
         return new LlmContext();
+    }
+
+    public void buildFinalContext() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("\n\nYou have the following structured intermediate results:\n\n");
+        attributes.forEach((key, value) -> {
+            sb.append(key).append(":\n");
+            sb.append(value).append("\n\n");
+        });
+        sb.append("Use this information to answer the user's original question.");
+        this.setFinalContext(sb.toString());
     }
 }

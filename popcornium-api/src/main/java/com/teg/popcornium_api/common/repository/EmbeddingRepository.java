@@ -16,7 +16,7 @@ public interface EmbeddingRepository extends JpaRepository<Embedding, String> {
 
     Optional<Embedding> findByMovieAndChunkType(Movie movie, ChunkType chunkType);
 
-    @Query(value = "SELECT * FROM embedding WHERE chunk_type IN (:chunkTypes)ORDER BY " +
+    @Query(value = "SELECT * FROM embedding WHERE chunk_type IN (:chunkTypes) ORDER BY " +
             "vector_value <-> CAST(:queryVector AS vector) LIMIT :limit", nativeQuery = true)
     List<Embedding> findNearestByChunkTypes(
             @Param("queryVector") float[] queryVector,
