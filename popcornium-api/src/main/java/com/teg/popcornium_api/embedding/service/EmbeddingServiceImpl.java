@@ -1,9 +1,9 @@
 package com.teg.popcornium_api.embedding.service;
 
-import com.teg.popcornium_api.common.model.types.ChunkType;
 import com.teg.popcornium_api.common.model.Embedding;
-import com.teg.popcornium_api.common.model.types.Language;
 import com.teg.popcornium_api.common.model.Movie;
+import com.teg.popcornium_api.common.model.types.ChunkType;
+import com.teg.popcornium_api.common.model.types.Language;
 import com.teg.popcornium_api.common.repository.EmbeddingRepository;
 import com.teg.popcornium_api.common.repository.MovieRepository;
 import com.teg.popcornium_api.common.service.api.AiEmbeddingService;
@@ -68,12 +68,12 @@ public class EmbeddingServiceImpl implements EmbeddingService {
                 .collect(Collectors.joining(", "));
 
         String metadataContent = String.format("""
-                Title: %s
-                Original Title: %s
-                Production Year: %s
-                Director: %s
-                Categories: %s
-                """,
+                        Title: %s
+                        Original Title: %s
+                        Production Year: %s
+                        Director: %s
+                        Categories: %s
+                        """,
                 movie.getPolishTitle(),
                 movie.getOriginalTitle(),
                 movie.getProductionYear(),
@@ -91,7 +91,7 @@ public class EmbeddingServiceImpl implements EmbeddingService {
                 .limit(15)
                 .collect(Collectors.joining("; "));
 
-        chunks.put(ChunkType.CAST, "Cast: " + actorsContent);
+        chunks.put(ChunkType.CAST, "Cast for movie "+ movie.getOriginalTitle() +" : " + actorsContent);
 
         movie.getDescriptions().stream()
                 .filter(d -> d.getLanguage() == Language.PL)
@@ -99,7 +99,7 @@ public class EmbeddingServiceImpl implements EmbeddingService {
                 .ifPresent(d ->
                         chunks.put(
                                 ChunkType.PLOT_SUMMARY,
-                                "Plot Summary: " + d.getText()
+                                "Plot Summary for movie " + movie.getOriginalTitle() + " : " + d.getText()
                         )
                 );
         movie.getWikipediaArticles().stream()
@@ -112,7 +112,7 @@ public class EmbeddingServiceImpl implements EmbeddingService {
                             : articleText;
 
                     chunks.put(ChunkType.WIKIPEDIA_ARTICLE,
-                            "Wikipedia Article: " + truncated);
+                            "Wikipedia Article for movie " + movie.getOriginalTitle() + " : " + truncated);
                 });
 
         return chunks;
