@@ -5,6 +5,8 @@ import com.teg.popcornium_api.common.model.dto.ChatMessage;
 import com.teg.popcornium_api.common.model.dto.ChatQuery;
 import com.teg.popcornium_api.common.model.dto.ChatRequest;
 import com.teg.popcornium_api.common.model.dto.ChatResponse;
+import com.teg.popcornium_api.common.service.api.AiChatService;
+import com.teg.popcornium_api.common.service.api.LlmService;
 import com.teg.popcornium_api.intentions.ComplexExecutionPlanner;
 import com.teg.popcornium_api.intentions.model.ExecutionStep;
 import com.teg.popcornium_api.intentions.model.Intention;
@@ -18,7 +20,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class LlmService {
+public class LlmServiceImpl implements LlmService {
 
     private static final String ERROR_JSON_PROCESSING = "JSON processing error during LLM request handling";
     private static final String ERROR_COMPLEX_JSON = "JSON processing error during complex intention execution";
@@ -28,6 +30,7 @@ public class LlmService {
     private final ComplexExecutionPlanner executionPlanner;
     private final LlmContextHandler contextHandler;
 
+    @Override
     public ChatResponse handle(ChatQuery chatQuery, List<ChatMessage> history) {
         try {
             contextHandler.createFreshContext(chatQuery.query());

@@ -29,7 +29,6 @@ public class UserController {
         return watchlistService.getCurrentUserWatchlist();
     }
 
-
     @PostMapping("/movies/{movieId}/like")
     public ResponseEntity<Void> like(@PathVariable String movieId) {
         movieRatingService.likeMovie(movieId);
