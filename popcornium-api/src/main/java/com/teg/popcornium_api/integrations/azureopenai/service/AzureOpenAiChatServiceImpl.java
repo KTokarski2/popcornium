@@ -8,6 +8,7 @@ import com.teg.popcornium_api.common.model.dto.ChatRequest;
 import com.teg.popcornium_api.common.model.dto.ChatResponse;
 import com.teg.popcornium_api.common.repository.CompletionRepository;
 import com.teg.popcornium_api.common.service.api.AiChatService;
+import com.teg.popcornium_api.common.service.api.CurrentUserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.azure.openai.AzureOpenAiChatModel;
@@ -39,6 +40,7 @@ public class AzureOpenAiChatServiceImpl implements AiChatService {
     private final AzureOpenAiChatModel chatModel;
     private final CompletionRepository completionRepository;
     private final ObjectMapper objectMapper;
+    private final CurrentUserService currentUserService;
 
     @Override
     public ChatResponse chat(ChatRequest chatRequest) {
@@ -112,7 +114,6 @@ public class AzureOpenAiChatServiceImpl implements AiChatService {
     private void saveCompletion(ChatRequest request, ChatResponse response) {
         try {
             String fullPrompt = buildFullPrompt(request);
-            LocalDateTime now = LocalDateTime.now();
             String metadataJson = request.metadata() != null
                     ? objectMapper.writeValueAsString(request.metadata())
                     : null;
@@ -127,6 +128,7 @@ public class AzureOpenAiChatServiceImpl implements AiChatService {
             completion.setMaxTokens(request.maxTokens() != null ? request.maxTokens() : 1000);
             completion.setFinishReason(response.finishReason());
             completion.setMetadata(metadataJson);
+            completion.setUser(currentUserService.getCurrentUser());
             Completion saved = completionRepository.save(completion);
             log.debug(MSG_SAVED_COMPLETION, saved.getId());
         } catch (JsonProcessingException e) {
