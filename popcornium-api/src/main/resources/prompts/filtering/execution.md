@@ -10,7 +10,7 @@ Possible fields:
 - actor
 - yearFrom
 - yearTo
-- country
-- language
+- rating
+- ratingCount
 
 Return JSON only. Do not include explanations.

@@ -38,8 +38,12 @@ public class WikipediaFetcherService {
                     wikipediaApiService.fetchAndSaveArticleForMovie(movie.getId());
                     alreadyProcessed++;
                     log.info(MSG_PROGRESS, alreadyProcessed, moviesCount);
+                    Thread.sleep(1000);
                 } catch (ArticleNotFoundException e) {
                     throw new RuntimeException(e);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
                 }
             }
             log.info(MSG_FETCH_COMPLETED);
