@@ -2,12 +2,9 @@ package com.teg.popcornium_api.integrations.azureopenai.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.teg.popcornium_api.common.model.dto.ChatQuery;
-import com.teg.popcornium_api.common.model.dto.ChatRequest;
 import com.teg.popcornium_api.common.model.dto.ChatResponse;
-import com.teg.popcornium_api.common.service.AiChatService;
-import com.teg.popcornium_api.common.service.AiEmbeddingService;
-import com.teg.popcornium_api.common.service.LlmService;
-import com.teg.popcornium_api.embedding.service.EmbeddingService;
+import com.teg.popcornium_api.common.service.LlmServiceImpl;
+import com.teg.popcornium_api.embedding.service.api.EmbeddingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -15,11 +12,11 @@ import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/test")
+@RequestMapping("/test")
 @RequiredArgsConstructor
 public class AzureOpenAiTestController {
 
-    private final LlmService llmService;
+    private final LlmServiceImpl llmService;
     private final EmbeddingService embeddingService;
 
     @PostMapping("/chat")

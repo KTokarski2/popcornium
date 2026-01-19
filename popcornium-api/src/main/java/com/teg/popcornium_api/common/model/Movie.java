@@ -50,6 +50,9 @@ public class Movie extends AbstractEntity {
     @OneToMany(mappedBy = "movie", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Description> descriptions = new HashSet<>();
 
+    @OneToMany(mappedBy = "movie", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<MovieRating> ratings = new HashSet<>();
+
     public void addCategory(Category category) {
         boolean alreadyAdded = movieCategories.stream()
                 .anyMatch(mc -> mc.getCategory().equals(category));

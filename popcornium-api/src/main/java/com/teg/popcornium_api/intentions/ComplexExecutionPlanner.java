@@ -1,15 +1,13 @@
 package com.teg.popcornium_api.intentions;
 
 import com.teg.popcornium_api.common.model.dto.ChatRequest;
-import com.teg.popcornium_api.common.service.AiChatService;
+import com.teg.popcornium_api.common.service.api.AiChatService;
 import com.teg.popcornium_api.intentions.model.ExecutionStep;
-import com.teg.popcornium_api.intentions.model.Intention;
 import com.teg.popcornium_api.prompts.PromptLoader;
 import com.teg.popcornium_api.prompts.PromptRenderer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 

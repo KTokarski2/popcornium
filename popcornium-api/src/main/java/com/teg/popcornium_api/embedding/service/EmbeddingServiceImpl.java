@@ -6,7 +6,8 @@ import com.teg.popcornium_api.common.model.types.Language;
 import com.teg.popcornium_api.common.model.Movie;
 import com.teg.popcornium_api.common.repository.EmbeddingRepository;
 import com.teg.popcornium_api.common.repository.MovieRepository;
-import com.teg.popcornium_api.common.service.AiEmbeddingService;
+import com.teg.popcornium_api.common.service.api.AiEmbeddingService;
+import com.teg.popcornium_api.embedding.service.api.EmbeddingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -20,7 +21,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class EmbeddingServiceImpl implements EmbeddingService{
+public class EmbeddingServiceImpl implements EmbeddingService {
 
     private final MovieRepository movieRepository;
     private final EmbeddingRepository embeddingRepository;
@@ -76,9 +77,7 @@ public class EmbeddingServiceImpl implements EmbeddingService{
                 movie.getPolishTitle(),
                 movie.getOriginalTitle(),
                 movie.getProductionYear(),
-                movie.getDirector() != null
-                        ? movie.getDirector().getName()
-                        : "Unknown",
+                movie.getDirector() != null ? movie.getDirector().getName() : "Unknown",
                 categories
         );
 

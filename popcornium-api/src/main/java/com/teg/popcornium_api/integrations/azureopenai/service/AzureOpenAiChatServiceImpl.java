@@ -7,7 +7,7 @@ import com.teg.popcornium_api.common.model.dto.ChatMessage;
 import com.teg.popcornium_api.common.model.dto.ChatRequest;
 import com.teg.popcornium_api.common.model.dto.ChatResponse;
 import com.teg.popcornium_api.common.repository.CompletionRepository;
-import com.teg.popcornium_api.common.service.AiChatService;
+import com.teg.popcornium_api.common.service.api.AiChatService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.azure.openai.AzureOpenAiChatModel;
