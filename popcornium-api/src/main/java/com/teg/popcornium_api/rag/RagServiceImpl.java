@@ -4,7 +4,7 @@ import com.teg.popcornium_api.common.model.Embedding;
 import com.teg.popcornium_api.common.model.Movie;
 import com.teg.popcornium_api.common.model.types.ChunkType;
 import com.teg.popcornium_api.common.repository.EmbeddingRepository;
-import com.teg.popcornium_api.common.service.AiEmbeddingService;
+import com.teg.popcornium_api.common.service.api.AiEmbeddingService;
 import com.teg.popcornium_api.intentions.model.Intention;
 import com.teg.popcornium_api.rag.api.RagService;
 import lombok.RequiredArgsConstructor;

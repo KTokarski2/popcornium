@@ -1,7 +1,7 @@
 package com.teg.popcornium_api.intentions;
 
 import com.teg.popcornium_api.common.model.dto.ChatRequest;
-import com.teg.popcornium_api.common.service.AiChatService;
+import com.teg.popcornium_api.common.service.api.AiChatService;
 import com.teg.popcornium_api.intentions.model.Intention;
 import com.teg.popcornium_api.prompts.PromptLoader;
 import com.teg.popcornium_api.prompts.PromptRenderer;
