@@ -59,7 +59,7 @@ public class LlmService {
                 QueryStrategy strategy = strategyRegistry.get(step.intention());
 
                 ChatRequest request = strategy.executeStrategy(
-                        userQuery,
+                        step.stepQuery(),
                         contextHandler.handleComplexIntentionContext(userQuery),
                         history
                 );
