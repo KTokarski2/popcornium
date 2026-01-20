@@ -1,6 +1,7 @@
     package com.teg.popcornium_api.common.service;
 
     import com.teg.popcornium_api.common.model.*;
+    import com.teg.popcornium_api.common.model.types.Language;
     import com.teg.popcornium_api.common.neo4jmodel.*;
     import com.teg.popcornium_api.common.repository.DescriptionRepository;
     import com.teg.popcornium_api.common.repository.MovieRepository;

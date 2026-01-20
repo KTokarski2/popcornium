@@ -20,7 +20,6 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -118,8 +117,6 @@ public class AzureOpenAiChatServiceImpl implements AiChatService {
                     ? objectMapper.writeValueAsString(request.metadata())
                     : null;
             Completion completion = new Completion();
-            completion.setCreated(now);
-            completion.setModified(now);
             completion.setModel(response.model());
             completion.setPrompt(fullPrompt);
             completion.setResponse(response.content());
