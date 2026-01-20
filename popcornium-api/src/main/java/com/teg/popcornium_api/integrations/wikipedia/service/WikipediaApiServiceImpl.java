@@ -1,6 +1,6 @@
 package com.teg.popcornium_api.integrations.wikipedia.service;
 
-import com.teg.popcornium_api.common.model.Language;
+import com.teg.popcornium_api.common.model.types.Language;
 import com.teg.popcornium_api.common.model.Movie;
 import com.teg.popcornium_api.common.model.WikipediaArticle;
 import com.teg.popcornium_api.common.repository.MovieRepository;
