@@ -90,6 +90,8 @@ public class WikipediaApiServiceImpl implements WikipediaApiService {
         LocalDateTime now = LocalDateTime.now();
 
         WikipediaArticle article = new WikipediaArticle();
+        article.setCreated(now);
+        article.setModified(now);
         article.setText(dto.content());
         article.setLanguage(Language.PL);
         article.setMovie(movie);

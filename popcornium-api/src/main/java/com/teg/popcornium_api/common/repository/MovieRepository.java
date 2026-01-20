@@ -34,6 +34,15 @@ public interface MovieRepository extends JpaRepository<Movie, String>, JpaSpecif
             "WHERE m.id = :id")
     Optional<Movie> findByIdWithCategories(@Param("id") String id);
 
+    @Query("""
+    SELECT DISTINCT m FROM Movie m
+    LEFT JOIN FETCH m.movieActors
+    LEFT JOIN FETCH m.movieCategories mc
+    LEFT JOIN FETCH mc.category
+    LEFT JOIN FETCH m.director
+""")
+    List<Movie> findAllWithGraphData();
+
     @NotNull
     @EntityGraph(attributePaths = {
             "director",

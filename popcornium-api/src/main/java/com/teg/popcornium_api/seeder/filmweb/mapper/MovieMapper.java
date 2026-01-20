@@ -34,6 +34,8 @@ public class MovieMapper {
         Integer productionYear = conversionUtil.parseProductionYear(dto.productionYear()).orElse(null);
 
         Movie movie = new Movie();
+        movie.setCreated(now);
+        movie.setModified(now);
         movie.setPolishTitle(dto.polishTitle());
         movie.setOriginalTitle(dto.originalTitle());
         movie.setProductionYear(productionYear);
@@ -41,21 +43,23 @@ public class MovieMapper {
         movie.setRatingCount(dto.ratingCount());
         movie.setPosterUrl(dto.posterUrl());
 
-        findOrCreateAndSetDirector(movie, dto.directorName());
+        findOrCreateAndSetDirector(movie, dto.directorName(), now);
 
         movie.setDescriptions(mapDescriptions(movie, dto.descriptions(), now));
-        movie.setMovieActors(mapMovieActors(movie, dto.actors()));
-        movie.setMovieCategories(mapMovieCategories(movie, dto.categories()));
+        movie.setMovieActors(mapMovieActors(movie, dto.actors(), now));
+        movie.setMovieCategories(mapMovieCategories(movie, dto.categories(), now));
 
         return movie;
     }
 
-    private void findOrCreateAndSetDirector(Movie movie, String directorName) {
+    private void findOrCreateAndSetDirector(Movie movie, String directorName, LocalDateTime now) {
         if (directorName != null && !directorName.isBlank()) {
             Director director = directorRepository.findByName(directorName)
                     .orElseGet(() -> {
                         Director newDirector = new Director();
                         newDirector.setName(directorName);
+                        newDirector.setCreated(now);
+                        newDirector.setModified(now);
                         return directorRepository.save(newDirector);
                     });
             movie.setDirector(director);
@@ -68,6 +72,8 @@ public class MovieMapper {
                 .flatMap(java.util.Collection::stream)
                 .map(text -> {
                     Description description = new Description();
+                    description.setCreated(now);
+                    description.setModified(now);
                     description.setText(text);
                     description.setLanguage(Language.PL);
                     description.setMovie(movie);
@@ -76,7 +82,7 @@ public class MovieMapper {
                 .collect(Collectors.toSet());
     }
 
-    private Set<MovieActor> mapMovieActors(Movie movie, Map<String, ActorImportDto> actors) {
+    private Set<MovieActor> mapMovieActors(Movie movie, Map<String, ActorImportDto> actors, LocalDateTime now) {
         return Optional.ofNullable(actors)
                 .stream()
                 .flatMap(map -> map.values().stream())
@@ -85,11 +91,15 @@ public class MovieMapper {
                             .orElseGet(() -> {
                                 Actor newActor = new Actor();
                                 newActor.setName(actorDto.fullName());
-                                newActor.setPhotoUrl(actorDto.photoLink());;
+                                newActor.setPhotoUrl(actorDto.photoLink());
+                                newActor.setCreated(now);
+                                newActor.setModified(now);
                                 return actorRepository.save(newActor);
                             });
 
                     MovieActor movieActor = new MovieActor();
+                    movieActor.setCreated(now);
+                    movieActor.setModified(now);
                     movieActor.setRoleName(actorDto.role());
 
                     movieActor.setMovie(movie);
@@ -100,7 +110,7 @@ public class MovieMapper {
                 .collect(Collectors.toSet());
     }
 
-    private Set<MovieCategory> mapMovieCategories(Movie movie, List<String> categories) {
+    private Set<MovieCategory> mapMovieCategories(Movie movie, List<String> categories, LocalDateTime now) {
         return Optional.ofNullable(categories)
                 .stream()
                 .flatMap(java.util.Collection::stream)
@@ -109,12 +119,18 @@ public class MovieMapper {
                             .orElseGet(() -> {
                                 Category newCategory = new Category();
                                 newCategory.setName(categoryName);
+                                newCategory.setCreated(now);
+                                newCategory.setModified(now);
                                 return categoryRepository.save(newCategory);
                             });
 
                     MovieCategory movieCategory = new MovieCategory();
+                    movieCategory.setCreated(now);
+                    movieCategory.setModified(now);
+
                     movieCategory.setMovie(movie);
                     movieCategory.setCategory(category);
+
                     return movieCategory;
                 })
                 .collect(Collectors.toSet());
