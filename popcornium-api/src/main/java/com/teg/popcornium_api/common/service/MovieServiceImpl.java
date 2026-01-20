@@ -75,6 +75,7 @@ public class MovieServiceImpl implements MovieService {
         }
 
         return new MovieDto(
+                movie.getId(),
                 movie.getPolishTitle(),
                 movie.getOriginalTitle(),
                 movie.getProductionYear(),

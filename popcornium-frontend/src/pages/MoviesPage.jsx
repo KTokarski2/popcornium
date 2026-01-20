@@ -1,35 +1,41 @@
-import { useState } from 'react';
-import { Box, Typography, TextField, Pagination, CardMedia, CardContent } from '@mui/material';
+import { useState, useEffect } from 'react';
+import { Box, Typography, TextField, Pagination, CardMedia, CardContent, CircularProgress, Alert } from '@mui/material';
 import { Search } from '@mui/icons-material';
 import { PageContainer, ContentContainer, StyledCard } from '../components/Styled';
 import Navigation from '../components/Navigation';
 import { useNavigate } from 'react-router-dom';
+import movieService from '../api/movieService';
 
 const MoviesPage = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(0);
+  const [movies, setMovies] = useState([]);
+  const [totalPages, setTotalPages] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const mockMovies = Array.from({ length: 150 }, (_, i) => ({
-    id: i + 1,
-    polishTitle: `Polski Tytuł ${i + 1}`,
-    originalTitle: `Original Title ${i + 1}`,
-    year: 2020 + (i % 6),
-    poster: `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='450'%3E%3Crect width='300' height='450' fill='%23333'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='20' fill='%23666'%3EMovie ${i + 1}%3C/text%3E%3C/svg%3E`,
-  }));
+  useEffect(() => {
+    const fetchMovies = async () => {
+      setLoading(true);
+      setError('');
+      try {
+        const result = await movieService.getMovies({
+          query: searchQuery || undefined,
+          page: page,
+        });
+        setMovies(result.movies);
+        setTotalPages(result.totalPages);
+      } catch (err) {
+        setError('Failed to load movies. Please try again.');
+        console.error('Error fetching movies:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const filteredMovies = mockMovies.filter(
-    (movie) =>
-      movie.polishTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      movie.originalTitle.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const moviesPerPage = 50;
-  const totalPages = Math.ceil(filteredMovies.length / moviesPerPage);
-  const displayedMovies = filteredMovies.slice(
-    (page - 1) * moviesPerPage,
-    page * moviesPerPage
-  );
+    fetchMovies();
+  }, [searchQuery, page]);
 
   return (
     <>
@@ -46,7 +52,7 @@ const MoviesPage = () => {
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
-                setPage(1);
+                setPage(0);
               }}
               InputProps={{
                 startAdornment: <Search sx={{ color: '#666666', mr: 1 }} />,
@@ -65,14 +71,25 @@ const MoviesPage = () => {
             />
           </Box>
 
-          <Box
-            sx={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: '24px',
-            }}
-          >
-            {displayedMovies.map((movie) => (
+          {error && (
+            <Alert severity="error" sx={{ mb: 3, backgroundColor: '#4a1a1a', color: '#ffffff' }}>
+              {error}
+            </Alert>
+          )}
+
+          {loading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+              <CircularProgress sx={{ color: '#ffffff' }} />
+            </Box>
+          ) : (
+            <Box
+              sx={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: '24px',
+              }}
+            >
+              {movies.map((movie, index) => (
               <Box
                 key={movie.id}
                 sx={{
@@ -96,7 +113,7 @@ const MoviesPage = () => {
                 >
                   <CardMedia
                     component="img"
-                    image={movie.poster}
+                    image={movie.posterUrl || `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='450'%3E%3Crect width='300' height='450' fill='%23333'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='20' fill='%23666'%3ENo Image%3C/text%3E%3C/svg%3E`}
                     alt={movie.polishTitle}
                     sx={{ aspectRatio: '2/3', objectFit: 'cover' }}
                   />
@@ -132,20 +149,21 @@ const MoviesPage = () => {
                       {movie.originalTitle}
                     </Typography>
                     <Typography variant="body2" sx={{ color: '#888888' }}>
-                      {movie.year}
+                      {movie.releaseYear}
                     </Typography>
                   </CardContent>
                 </StyledCard>
               </Box>
             ))}
           </Box>
+          )}
 
           {totalPages > 1 && (
             <Box sx={{ display: 'flex', justifyContent: 'center', mt: 6 }}>
               <Pagination
                 count={totalPages}
-                page={page}
-                onChange={(e, value) => setPage(value)}
+                page={page + 1}
+                onChange={(e, value) => setPage(value - 1)}
                 sx={{
                   '& .MuiPaginationItem-root': {
                     color: '#ffffff',
