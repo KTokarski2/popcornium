@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Box, Typography, Link } from '@mui/material';
+import { Box, Typography, Link, Alert } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { StyledButton, StyledTextField, StyledPaper } from '../components/Styled';
 import { styled } from '@mui/material/styles';
 
@@ -20,14 +21,27 @@ const RegisterBox = styled(StyledPaper)({
 
 const RegisterPage = () => {
   const navigate = useNavigate();
+  const { register } = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleRegister = (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
-    console.log('Register attempt:', { name, email, password });
-    navigate('/movies');
+    setError('');
+    setLoading(true);
+
+    const result = await register(name, email, password);
+
+    if (result.success) {
+      navigate('/movies');
+    } else {
+      setError(result.error?.message || 'Registration failed. Please try again.');
+    }
+
+    setLoading(false);
   };
 
   return (
@@ -39,6 +53,12 @@ const RegisterPage = () => {
         <Typography variant="body1" sx={{ color: '#b0b0b0', mb: 4, textAlign: 'center' }}>
           Create your account
         </Typography>
+
+        {error && (
+          <Alert severity="error" sx={{ mb: 3, backgroundColor: '#4a1a1a', color: '#ffffff' }}>
+            {error}
+          </Alert>
+        )}
 
         <form onSubmit={handleRegister}>
           <StyledTextField
@@ -71,8 +91,8 @@ const RegisterPage = () => {
             required
           />
 
-          <StyledButton fullWidth type="submit" sx={{ mb: 3 }}>
-            Sign Up
+          <StyledButton fullWidth type="submit" disabled={loading} sx={{ mb: 3 }}>
+            {loading ? 'Creating account...' : 'Sign Up'}
           </StyledButton>
 
           <Box sx={{ textAlign: 'center' }}>

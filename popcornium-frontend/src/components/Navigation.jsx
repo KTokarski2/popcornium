@@ -1,6 +1,7 @@
 import { AppBar, Toolbar, Typography, Box, IconButton } from '@mui/material';
-import { Chat, Movie } from '@mui/icons-material';
+import { Chat, Movie, Logout } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { styled } from '@mui/material/styles';
 
 const StyledAppBar = styled(AppBar)({
@@ -21,6 +22,12 @@ const NavButton = styled(IconButton)(({ active }) => ({
 const Navigation = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { logout } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   return (
     <StyledAppBar position="fixed">
@@ -45,6 +52,9 @@ const Navigation = () => {
             onClick={() => navigate('/chat')}
           >
             <Chat />
+          </NavButton>
+          <NavButton onClick={handleLogout} sx={{ ml: 1 }}>
+            <Logout />
           </NavButton>
         </Box>
       </Toolbar>

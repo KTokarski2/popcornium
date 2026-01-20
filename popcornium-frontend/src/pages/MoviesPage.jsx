@@ -15,7 +15,7 @@ const MoviesPage = () => {
     polishTitle: `Polski Tytuł ${i + 1}`,
     originalTitle: `Original Title ${i + 1}`,
     year: 2020 + (i % 6),
-    poster: `https://via.placeholder.com/300x450/333333/ffffff?text=Movie+${i + 1}`,
+    poster: `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='450'%3E%3Crect width='300' height='450' fill='%23333'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial' font-size='20' fill='%23666'%3EMovie ${i + 1}%3C/text%3E%3C/svg%3E`,
   }));
 
   const filteredMovies = mockMovies.filter(
