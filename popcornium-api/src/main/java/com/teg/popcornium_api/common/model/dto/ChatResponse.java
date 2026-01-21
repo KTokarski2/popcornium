@@ -9,5 +9,6 @@ public record ChatResponse(
         Integer promptTokens,
         Integer completionTokens,
         Integer totalTokens,
-        String finishReason
+        String finishReason,
+        String conversationId
 ) {}

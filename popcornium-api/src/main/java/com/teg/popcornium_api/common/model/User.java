@@ -30,6 +30,9 @@ public class User extends AbstractEntity implements UserDetails {
     private Set<Completion> completions = new HashSet<>();
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<Conversation> conversations = new HashSet<>();
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<WatchlistEntry> watchlist = new HashSet<>();
 
     @Override

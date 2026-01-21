@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Box, Typography, TextField, IconButton, Paper } from '@mui/material';
+import { Box, Typography, TextField, IconButton, Paper, CircularProgress } from '@mui/material';
 import { Send } from '@mui/icons-material';
 import { PageContainer, ContentContainer } from '../components/Styled';
 import Navigation from '../components/Navigation';
 import { styled } from '@mui/material/styles';
+import { sendMessage } from '../api/chatService';
 
 const ChatContainer = styled(Box)({
   display: 'flex',
@@ -49,7 +50,9 @@ const MessagesContainer = styled(Box)({
   gap: '16px',
 });
 
-const Message = styled(Box)(({ isUser }) => ({
+const Message = styled(Box, {
+  shouldForwardProp: (prop) => prop !== 'isUser',
+})(({ isUser }) => ({
   maxWidth: '70%',
   padding: '12px 16px',
   borderRadius: '12px',
@@ -71,30 +74,43 @@ const ChatPage = () => {
     { id: 1, text: 'Hello! How can I help you find movies today?', isUser: false },
   ]);
   const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
   const [conversations] = useState([
     { id: 1, title: 'Action movies recommendations', date: '2026-01-20' },
     { id: 2, title: 'Best Sci-Fi from 2025', date: '2026-01-19' },
     { id: 3, title: 'Classic films discussion', date: '2026-01-18' },
   ]);
 
-  const handleSend = () => {
-    if (input.trim()) {
-      const newMessage = {
+  const handleSend = async () => {
+    if (input.trim() && !loading) {
+      const userMessage = {
         id: messages.length + 1,
         text: input,
         isUser: true,
       };
-      setMessages([...messages, newMessage]);
+      setMessages([...messages, userMessage]);
       setInput('');
+      setLoading(true);
 
-      setTimeout(() => {
+      try {
+        const response = await sendMessage(input);
         const aiResponse = {
           id: messages.length + 2,
-          text: 'This is a placeholder response. API integration will be added later.',
+          text: response.content,
           isUser: false,
         };
         setMessages((prev) => [...prev, aiResponse]);
-      }, 500);
+      } catch (error) {
+        console.error('Error sending message:', error);
+        const errorMessage = {
+          id: messages.length + 2,
+          text: 'Sorry, I encountered an error. Please try again.',
+          isUser: false,
+        };
+        setMessages((prev) => [...prev, errorMessage]);
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -127,6 +143,14 @@ const ChatPage = () => {
                     <Typography variant="body1">{message.text}</Typography>
                   </Message>
                 ))}
+                {loading && (
+                  <Box sx={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', gap: 2 }}>
+                    <CircularProgress size={20} sx={{ color: '#ffffff' }} />
+                    <Typography variant="body2" sx={{ color: '#888888' }}>
+                      Thinking...
+                    </Typography>
+                  </Box>
+                )}
               </MessagesContainer>
 
               <InputContainer>
@@ -155,7 +179,7 @@ const ChatPage = () => {
                     '&:hover': { backgroundColor: '#e0e0e0' },
                     '&:disabled': { backgroundColor: '#555555' },
                   }}
-                  disabled={!input.trim()}
+                  disabled={!input.trim() || loading}
                 >
                   <Send />
                 </IconButton>
