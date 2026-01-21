@@ -2,6 +2,7 @@ package com.teg.popcornium_api.common.controller;
 
 import com.teg.popcornium_api.common.model.dto.ChatQuery;
 import com.teg.popcornium_api.common.model.dto.ChatResponse;
+import com.teg.popcornium_api.common.model.dto.LlmResponse;
 import com.teg.popcornium_api.common.service.api.LlmService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

@@ -5,10 +5,5 @@ import lombok.Builder;
 @Builder
 public record ChatResponse(
         String content,
-        String model,
-        Integer promptTokens,
-        Integer completionTokens,
-        Integer totalTokens,
-        String finishReason,
         String conversationId
 ) {}

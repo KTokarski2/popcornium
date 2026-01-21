@@ -1,15 +1,29 @@
 import apiClient from './config/apiClient';
 
 const chatService = {
-  sendMessage: async (message) => {
-    const data = await apiClient.post('/completions/chat', { query: message });
+  sendMessage: async (message, conversationId = null) => {
+    const data = await apiClient.post('/completions/chat', { 
+      query: message,
+      conversationId: conversationId 
+    });
     return {
       content: data.content,
       model: data.model,
       finishReason: data.finishReason,
+      conversationId: data.conversationId,
     };
+  },
+
+  getConversations: async () => {
+    const data = await apiClient.get('/conversations');
+    return data;
+  },
+
+  getConversationDetail: async (id) => {
+    const data = await apiClient.get(`/conversations/${id}`);
+    return data;
   },
 };
 
-export const { sendMessage } = chatService;
+export const { sendMessage, getConversations, getConversationDetail } = chatService;
 export default chatService;

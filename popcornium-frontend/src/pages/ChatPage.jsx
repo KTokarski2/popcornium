@@ -1,10 +1,10 @@
-import { useState } from 'react';
-import { Box, Typography, TextField, IconButton, Paper, CircularProgress } from '@mui/material';
-import { Send } from '@mui/icons-material';
+import { useState, useEffect } from 'react';
+import { Box, Typography, TextField, IconButton, Paper, CircularProgress, Button } from '@mui/material';
+import { Send, Add } from '@mui/icons-material';
 import { PageContainer, ContentContainer } from '../components/Styled';
 import Navigation from '../components/Navigation';
 import { styled } from '@mui/material/styles';
-import { sendMessage } from '../api/chatService';
+import { sendMessage, getConversations, getConversationDetail } from '../api/chatService';
 
 const ChatContainer = styled(Box)({
   display: 'flex',
@@ -70,16 +70,54 @@ const InputContainer = styled(Box)({
 });
 
 const ChatPage = () => {
-  const [messages, setMessages] = useState([
-    { id: 1, text: 'Hello! How can I help you find movies today?', isUser: false },
-  ]);
+  const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [conversations] = useState([
-    { id: 1, title: 'Action movies recommendations', date: '2026-01-20' },
-    { id: 2, title: 'Best Sci-Fi from 2025', date: '2026-01-19' },
-    { id: 3, title: 'Classic films discussion', date: '2026-01-18' },
-  ]);
+  const [conversations, setConversations] = useState([]);
+  const [currentConversationId, setCurrentConversationId] = useState(null);
+  const [loadingConversations, setLoadingConversations] = useState(true);
+
+  useEffect(() => {
+    fetchConversations();
+  }, []);
+
+  const fetchConversations = async () => {
+    try {
+      setLoadingConversations(true);
+      const data = await getConversations();
+      setConversations(data);
+    } catch (error) {
+      console.error('Error fetching conversations:', error);
+    } finally {
+      setLoadingConversations(false);
+    }
+  };
+
+  const loadConversation = async (conversationId) => {
+    try {
+      setLoading(true);
+      const data = await getConversationDetail(conversationId);
+      setCurrentConversationId(conversationId);
+      setMessages(
+        data.messages.map((msg, index) => ({
+          id: index + 1,
+          text: msg.content,
+          isUser: msg.source === 'USER',
+        }))
+      );
+    } catch (error) {
+      console.error('Error loading conversation:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const startNewConversation = () => {
+    setCurrentConversationId(null);
+    setMessages([
+      { id: 1, text: 'Hello! How can I help you find movies today?', isUser: false },
+    ]);
+  };
 
   const handleSend = async () => {
     if (input.trim() && !loading) {
@@ -89,17 +127,25 @@ const ChatPage = () => {
         isUser: true,
       };
       setMessages([...messages, userMessage]);
+      const messageText = input;
       setInput('');
       setLoading(true);
 
       try {
-        const response = await sendMessage(input);
+        const response = await sendMessage(messageText, currentConversationId);
+        
         const aiResponse = {
           id: messages.length + 2,
           text: response.content,
           isUser: false,
         };
         setMessages((prev) => [...prev, aiResponse]);
+        
+        // Update conversationId if it's a new conversation
+        if (!currentConversationId && response.conversationId) {
+          setCurrentConversationId(response.conversationId);
+          fetchConversations(); // Refresh conversation list
+        }
       } catch (error) {
         console.error('Error sending message:', error);
         const errorMessage = {
@@ -121,19 +167,50 @@ const ChatPage = () => {
         <ContentContainer>
           <ChatContainer>
             <HistoryPanel>
-              <Typography variant="h6" sx={{ mb: 3, fontWeight: 700 }}>
-                Conversation History
-              </Typography>
-              {conversations.map((conv) => (
-                <HistoryItem key={conv.id}>
-                  <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
-                    {conv.title}
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: '#888888' }}>
-                    {conv.date}
-                  </Typography>
-                </HistoryItem>
-              ))}
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                  Conversations
+                </Typography>
+                <IconButton
+                  onClick={startNewConversation}
+                  sx={{
+                    backgroundColor: '#ffffff',
+                    color: '#000000',
+                    width: 32,
+                    height: 32,
+                    '&:hover': { backgroundColor: '#e0e0e0' },
+                  }}
+                >
+                  <Add />
+                </IconButton>
+              </Box>
+              
+              {loadingConversations ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
+                  <CircularProgress size={24} sx={{ color: '#ffffff' }} />
+                </Box>
+              ) : conversations.length === 0 ? (
+                <Typography variant="body2" sx={{ color: '#888888', textAlign: 'center' }}>
+                  No conversations yet
+                </Typography>
+              ) : (
+                conversations.map((conv) => (
+                  <HistoryItem 
+                    key={conv.id} 
+                    onClick={() => loadConversation(conv.id)}
+                    sx={{
+                      backgroundColor: currentConversationId === conv.id ? '#333333' : '#262626',
+                    }}
+                  >
+                    <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                      {conv.title}
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: '#888888' }}>
+                      {new Date(conv.createdAt).toLocaleDateString()}
+                    </Typography>
+                  </HistoryItem>
+                ))
+              )}
             </HistoryPanel>
 
             <ChatPanel>

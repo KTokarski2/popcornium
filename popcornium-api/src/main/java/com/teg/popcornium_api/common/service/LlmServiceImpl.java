@@ -3,10 +3,7 @@ package com.teg.popcornium_api.common.service;
 import com.azure.json.implementation.jackson.core.JsonProcessingException;
 import com.teg.popcornium_api.common.model.Conversation;
 import com.teg.popcornium_api.common.model.ConversationMessage;
-import com.teg.popcornium_api.common.model.dto.ChatMessage;
-import com.teg.popcornium_api.common.model.dto.ChatQuery;
-import com.teg.popcornium_api.common.model.dto.ChatRequest;
-import com.teg.popcornium_api.common.model.dto.ChatResponse;
+import com.teg.popcornium_api.common.model.dto.*;
 import com.teg.popcornium_api.common.model.types.MessageSource;
 import com.teg.popcornium_api.common.repository.ConversationRepository;
 import com.teg.popcornium_api.common.service.api.AiChatService;
@@ -20,6 +17,7 @@ import com.teg.popcornium_api.intentions.strategy.QueryStrategy;
 import com.teg.popcornium_api.intentions.strategy.QueryStrategyRegistry;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -38,6 +36,7 @@ public class LlmServiceImpl implements LlmService {
     private final CurrentUserService currentUserService;
 
     @Override
+    @Transactional
     public ChatResponse handle(ChatQuery chatQuery, List<ChatMessage> history) {
         try {
             contextHandler.createFreshContext(chatQuery.query());
@@ -52,17 +51,21 @@ public class LlmServiceImpl implements LlmService {
                     contextHandler.handleBaseIntentionContext(chatQuery.query(), contextHandler.getBaseIntention()),
                     history
             );
-            ChatResponse response = aiChatService.chat(request);
+            LlmResponse response = aiChatService.chat(request);
             addMessageToConversation(conversation, response.content(), MessageSource.AGENT);
             conversationRepository.save(conversation);
-            return response;
+            return ChatResponse.builder()
+                    .content(response.content())
+                    .conversationId(conversation.getId())
+                    .build();
 
         } catch (JsonProcessingException | com.fasterxml.jackson.core.JsonProcessingException e) {
             throw new RuntimeException(ERROR_JSON_PROCESSING, e);
         }
     }
 
-    private ChatResponse handleComplex(String userQuery, Conversation conversation, List<ChatMessage> history) {
+    @Transactional
+    protected ChatResponse handleComplex(String userQuery, Conversation conversation, List<ChatMessage> history) {
         try {
             List<ExecutionStep> plan = executionPlanner.plan(userQuery);
 
@@ -76,7 +79,7 @@ public class LlmServiceImpl implements LlmService {
                         history
                 );
 
-                ChatResponse response = aiChatService.chat(request);
+                LlmResponse response = aiChatService.chat(request);
                 addPartialResponseToContext(step, response.content());
             }
 
@@ -86,11 +89,14 @@ public class LlmServiceImpl implements LlmService {
                     contextHandler.buildFinalComplexContext(),
                     history
             );
-            ChatResponse response = aiChatService.chat(finalRequest);
+            LlmResponse response = aiChatService.chat(finalRequest);
             addMessageToConversation(conversation, userQuery, MessageSource.USER);
             addMessageToConversation(conversation, response.content(), MessageSource.AGENT);
             conversationRepository.save(conversation);
-            return aiChatService.chat(finalRequest);
+            return ChatResponse.builder()
+                    .content(response.content())
+                    .conversationId(conversation.getId())
+                    .build();
 
         } catch (JsonProcessingException | com.fasterxml.jackson.core.JsonProcessingException e) {
             throw new RuntimeException(ERROR_COMPLEX_JSON, e);
