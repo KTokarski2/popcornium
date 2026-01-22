@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.teg.popcornium_api.common.model.dto.ChatMessage;
 import com.teg.popcornium_api.common.model.dto.ChatRequest;
-import com.teg.popcornium_api.common.model.dto.ChatResponse;
+import com.teg.popcornium_api.common.model.dto.LlmResponse;
 import com.teg.popcornium_api.common.service.api.AiChatService;
 import com.teg.popcornium_api.intentions.model.Intention;
 import com.teg.popcornium_api.intentions.model.MovieFilterDto;
@@ -51,7 +51,7 @@ public class FilteringQueryStrategy implements QueryStrategy {
                 .maxTokens(300)
                 .metadata(Map.of("intention", "FILTERING"))
                 .build();
-        ChatResponse response = aiChatService.chat(request);
+        LlmResponse response = aiChatService.chat(request);
         String json = response.content();
         List<MovieFilteringResultDto> results = filteringService.filter(mapResponse(json));
         String resultsString = FilteringContextBuilder.build(results);

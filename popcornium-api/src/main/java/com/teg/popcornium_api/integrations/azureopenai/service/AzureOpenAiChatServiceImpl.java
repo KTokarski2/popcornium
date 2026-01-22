@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.teg.popcornium_api.common.model.Completion;
 import com.teg.popcornium_api.common.model.dto.ChatMessage;
 import com.teg.popcornium_api.common.model.dto.ChatRequest;
-import com.teg.popcornium_api.common.model.dto.ChatResponse;
+import com.teg.popcornium_api.common.model.dto.LlmResponse;
 import com.teg.popcornium_api.common.repository.CompletionRepository;
 import com.teg.popcornium_api.common.service.api.AiChatService;
 import com.teg.popcornium_api.common.service.api.CurrentUserService;
@@ -42,7 +42,7 @@ public class AzureOpenAiChatServiceImpl implements AiChatService {
     private final CurrentUserService currentUserService;
 
     @Override
-    public ChatResponse chat(ChatRequest chatRequest) {
+    public LlmResponse chat(ChatRequest chatRequest) {
         validateRequest(chatRequest);
         try {
             log.debug(MSG_SENDING_CHAT_REQUEST);
@@ -53,7 +53,7 @@ public class AzureOpenAiChatServiceImpl implements AiChatService {
             Integer totalTokens = response.getMetadata().getUsage().getTotalTokens();
             Integer promptTokens = response.getMetadata().getUsage().getPromptTokens();
             Integer completionTokens = response.getMetadata().getUsage().getCompletionTokens();
-            ChatResponse chatResponse = ChatResponse.builder()
+            LlmResponse llmResponse = LlmResponse.builder()
                     .content(content)
                     .model(response.getMetadata().getModel())
                     .promptTokens(promptTokens)
@@ -62,8 +62,8 @@ public class AzureOpenAiChatServiceImpl implements AiChatService {
                     .finishReason(response.getResult().getMetadata().getFinishReason())
                     .build();
             log.debug(MSG_RECEIVED_RESPONSE, totalTokens);
-            saveCompletion(chatRequest, chatResponse);
-            return chatResponse;
+            saveCompletion(chatRequest, llmResponse);
+            return llmResponse;
         } catch (Exception e) {
             log.error(ERROR_FAILED_TO_COMPLETE_CHAT, e);
             throw new RuntimeException(ERROR_FAILED_TO_COMPLETE_CHAT, e);
@@ -110,7 +110,7 @@ public class AzureOpenAiChatServiceImpl implements AiChatService {
         return messages;
     }
 
-    private void saveCompletion(ChatRequest request, ChatResponse response) {
+    private void saveCompletion(ChatRequest request, LlmResponse response) {
         try {
             String fullPrompt = buildFullPrompt(request);
             String metadataJson = request.metadata() != null

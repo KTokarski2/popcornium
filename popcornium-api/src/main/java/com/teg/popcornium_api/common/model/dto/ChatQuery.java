@@ -4,5 +4,6 @@ import lombok.Builder;
 
 @Builder
 public record ChatQuery(
-        String query
+        String query,
+        String conversationId
 ) {}
