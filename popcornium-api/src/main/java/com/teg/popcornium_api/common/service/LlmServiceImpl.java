@@ -15,6 +15,7 @@ import com.teg.popcornium_api.intentions.model.Intention;
 import com.teg.popcornium_api.intentions.service.LlmContextHandler;
 import com.teg.popcornium_api.intentions.strategy.QueryStrategy;
 import com.teg.popcornium_api.intentions.strategy.QueryStrategyRegistry;
+import com.teg.popcornium_api.rag.RagType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,9 +38,9 @@ public class LlmServiceImpl implements LlmService {
 
     @Override
     @Transactional
-    public ChatResponse handle(ChatQuery chatQuery, List<ChatMessage> history) {
+    public ChatResponse handle(ChatQuery chatQuery, List<ChatMessage> history, RagType ragType) {
         try {
-            contextHandler.createFreshContext(chatQuery.query());
+            contextHandler.createFreshContext(chatQuery.query(), ragType);
             Conversation conversation = getConversation(chatQuery);
             if (contextHandler.getBaseIntention() == Intention.COMPLEX) {
                 return handleComplex(chatQuery.query(), conversation, history);
