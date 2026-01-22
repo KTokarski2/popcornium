@@ -4,7 +4,7 @@ import com.teg.popcornium_api.intentions.IntentionDetector;
 import com.teg.popcornium_api.intentions.model.ExecutionStep;
 import com.teg.popcornium_api.intentions.model.Intention;
 import com.teg.popcornium_api.intentions.model.LlmContext;
-import com.teg.popcornium_api.rag.RagType;
+import com.teg.popcornium_api.rag.types.RagType;
 import com.teg.popcornium_api.rag.api.GraphRagService;
 import com.teg.popcornium_api.rag.api.RagService;
 import lombok.RequiredArgsConstructor;

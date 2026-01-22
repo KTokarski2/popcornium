@@ -15,8 +15,9 @@ import com.teg.popcornium_api.intentions.model.Intention;
 import com.teg.popcornium_api.intentions.service.LlmContextHandler;
 import com.teg.popcornium_api.intentions.strategy.QueryStrategy;
 import com.teg.popcornium_api.intentions.strategy.QueryStrategyRegistry;
-import com.teg.popcornium_api.rag.RagType;
+import com.teg.popcornium_api.rag.types.RagType;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +25,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class LlmServiceImpl implements LlmService {
 
     private static final String ERROR_JSON_PROCESSING = "JSON processing error during LLM request handling";
@@ -40,6 +42,7 @@ public class LlmServiceImpl implements LlmService {
     @Transactional
     public ChatResponse handle(ChatQuery chatQuery, List<ChatMessage> history, RagType ragType) {
         try {
+            log.info("Handling user query with RAG type: {}", ragType);
             contextHandler.createFreshContext(chatQuery.query(), ragType);
             Conversation conversation = getConversation(chatQuery);
             if (contextHandler.getBaseIntention() == Intention.COMPLEX) {
