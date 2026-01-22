@@ -52,7 +52,10 @@ public class LlmServiceImpl implements LlmService {
             QueryStrategy strategy = strategyRegistry.get(contextHandler.getBaseIntention());
             ChatRequest request = strategy.executeStrategy(
                     chatQuery.query(),
-                    contextHandler.handleBaseIntentionContext(chatQuery.query(), contextHandler.getBaseIntention()),
+                    contextHandler.handleBaseIntentionContext(
+                            chatQuery.query(),
+                            contextHandler.getBaseIntention(),
+                            buildHistory(conversation)),
                     history
             );
             LlmResponse response = aiChatService.chat(request);
@@ -90,7 +93,7 @@ public class LlmServiceImpl implements LlmService {
             QueryStrategy finalStrategy = strategyRegistry.get(Intention.GENERAL);
             ChatRequest finalRequest = finalStrategy.executeStrategy(
                     userQuery,
-                    contextHandler.buildFinalComplexContext(),
+                    contextHandler.buildFinalComplexContext(buildHistory(conversation)),
                     history
             );
             LlmResponse response = aiChatService.chat(finalRequest);
@@ -131,5 +134,17 @@ public class LlmServiceImpl implements LlmService {
         message.setMessageSource(source);
         message.setConversation(conversation);
         conversation.getConversationMessages().add(message);
+    }
+
+    private String buildHistory(Conversation conversation) {
+        StringBuilder sb = new StringBuilder("CONVERSATION HISTORY:\n");
+        conversationRepository.findLast10(conversation)
+                .forEach(msg -> {
+                    switch (msg.getMessageSource()) {
+                        case AGENT -> sb.append("ASSISTANT MESSAGE:\n").append(msg.getMessageContent()).append("\n");
+                        case USER -> sb.append("USER MESSAGE:\n").append(msg.getMessageContent()).append("\n");
+                    }
+                });
+        return sb.toString();
     }
 }

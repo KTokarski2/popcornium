@@ -8,8 +8,9 @@ import { sendMessage, getConversations, getConversationDetail } from '../api/cha
 
 const ChatContainer = styled(Box)({
   display: 'flex',
-  height: 'calc(100vh - 80px)',
+  height: 'calc(100vh - 128px)',
   gap: '24px',
+  overflow: 'hidden',
 });
 
 const HistoryPanel = styled(Paper)({
