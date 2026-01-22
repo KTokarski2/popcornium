@@ -13,7 +13,7 @@ import org.springframework.data.neo4j.core.schema.Relationship;
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class DescriptionNode extends AbstractNode {
-    @Lob
+
     @Basic(fetch = FetchType.LAZY)
     @Column(name = "text")
     private String text;
