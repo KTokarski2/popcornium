@@ -4,6 +4,7 @@ import com.teg.popcornium_api.intentions.IntentionDetector;
 import com.teg.popcornium_api.intentions.model.ExecutionStep;
 import com.teg.popcornium_api.intentions.model.Intention;
 import com.teg.popcornium_api.intentions.model.LlmContext;
+import com.teg.popcornium_api.rag.api.GraphRagService;
 import com.teg.popcornium_api.rag.api.RagService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -19,6 +20,7 @@ public class LlmContextHandler {
     private final RagService ragService;
     private LlmContext llmContext;
     private Optional<ExecutionStep> step;
+    private final GraphRagService graphRagService;
 
     private static final String ERROR_EXECUTION_STEP_MISSING = "Missing current execution step";
 
@@ -71,8 +73,8 @@ public class LlmContextHandler {
         return ragService.retrieveContext(userQuery, intention);
     }
 
-    private String doGraphRag() {
-        return "";
+    private String doGraphRag(String userQuery) {
+        return graphRagService.retrieveContext(userQuery);
     }
 
     private ExecutionStep getStepIfPresent() {
