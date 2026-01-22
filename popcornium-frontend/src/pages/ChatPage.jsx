@@ -165,8 +165,8 @@ const ChatPage = () => {
   return (
     <>
       <Navigation />
-      <PageContainer>
-        <ContentContainer>
+      <PageContainer sx={{ height: '100vh', overflow: 'hidden' }}>
+        <ContentContainer sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
           <ChatContainer>
             <HistoryPanel>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>

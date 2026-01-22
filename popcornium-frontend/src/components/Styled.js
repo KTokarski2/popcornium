@@ -97,18 +97,13 @@ export const StyledPaper = styled(Paper)({
 
 export const PageContainer = styled(Box)({
   minHeight: '100vh',
-  height: '100vh',
   backgroundColor: '#000000',
   color: '#ffffff',
   paddingTop: '80px',
-  overflow: 'hidden',
 });
 
 export const ContentContainer = styled(Box)({
   maxWidth: '1400px',
-  height: '100%',
   margin: '0 auto',
   padding: '24px',
-  display: 'flex',
-  flexDirection: 'column',
 });
