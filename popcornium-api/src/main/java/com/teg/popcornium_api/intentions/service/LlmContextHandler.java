@@ -4,6 +4,7 @@ import com.teg.popcornium_api.intentions.IntentionDetector;
 import com.teg.popcornium_api.intentions.model.ExecutionStep;
 import com.teg.popcornium_api.intentions.model.Intention;
 import com.teg.popcornium_api.intentions.model.LlmContext;
+import com.teg.popcornium_api.rag.RagType;
 import com.teg.popcornium_api.rag.api.GraphRagService;
 import com.teg.popcornium_api.rag.api.RagService;
 import lombok.RequiredArgsConstructor;
@@ -19,14 +20,16 @@ public class LlmContextHandler {
     private final IntentionDetector intentionDetector;
     private final RagService ragService;
     private LlmContext llmContext;
+    private RagType ragType;
     private Optional<ExecutionStep> step;
     private final GraphRagService graphRagService;
 
     private static final String ERROR_EXECUTION_STEP_MISSING = "Missing current execution step";
 
-    public void createFreshContext(String userQuery) {
+    public void createFreshContext(String userQuery, RagType ragType) {
         this.llmContext = LlmContext.empty();
         this.step = Optional.empty();
+        this.ragType = ragType;
         llmContext.setDetectedBaseIntention(intentionDetector.detect(userQuery));
     }
 
@@ -36,7 +39,10 @@ public class LlmContextHandler {
 
     public Optional<String> handleBaseIntentionContext(String userQuery, Intention intention) {
         if (baseShouldRag()) {
-            llmContext.setFinalContext(doNormalRag(userQuery, intention));
+            switch(this.ragType) {
+                case GRAPH -> llmContext.setFinalContext(doGraphRag(userQuery));
+                case NORMAL -> llmContext.setFinalContext(doNormalRag(userQuery, intention));
+            }
             return Optional.of(llmContext.getFinalContext());
         }
         return Optional.empty();
@@ -86,7 +92,10 @@ public class LlmContextHandler {
         if (!step.allowRag()) {
             return Optional.empty();
         }
-        String ragContext = doNormalRag(userQuery, step.intention());
+        String ragContext = switch (this.ragType) {
+            case NORMAL -> doNormalRag(userQuery, step.intention());
+            case GRAPH -> doGraphRag(userQuery);
+        };
         return ragContext.isBlank() ? Optional.empty() : Optional.of(ragContext);
     }
 

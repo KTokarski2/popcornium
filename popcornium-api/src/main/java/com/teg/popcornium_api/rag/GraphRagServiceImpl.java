@@ -2,6 +2,7 @@ package com.teg.popcornium_api.rag;
 
 import com.teg.popcornium_api.common.model.dto.ChatRequest;
 import com.teg.popcornium_api.common.model.dto.LlmResponse;
+import com.teg.popcornium_api.common.service.GraphSchemaService;
 import com.teg.popcornium_api.common.service.api.AiChatService;
 import com.teg.popcornium_api.rag.api.GraphRagService;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +23,7 @@ public class GraphRagServiceImpl implements GraphRagService {
 
     private final AiChatService aiChatService;
     private final Neo4jClient neo4jClient;
+    private final GraphSchemaService graphSchemaService;
 
     @Override
     public String retrieveContext(String userQuery) {
