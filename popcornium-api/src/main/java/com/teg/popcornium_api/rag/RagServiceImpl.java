@@ -48,15 +48,15 @@ public class RagServiceImpl implements RagService {
                 .collect(Collectors.groupingBy(Embedding::getMovie));
 
         StringBuilder context = new StringBuilder();
-        context.append("KONTEKST FILMOWY:\n\n");
+        context.append("MOVIE CONTEXT:\n\n");
         if (intention == Intention.COUNTING || intention == Intention.FILTERING) {
-            context.append("TRYB: ZLICZANIE\n\n");
+            context.append("MODE: COUNTING\n\n");
         }
 
         for (Map.Entry<Movie, List<Embedding>> entry : byMovie.entrySet()) {
             Movie movie = entry.getKey();
 
-            context.append("FILM: ")
+            context.append("MOVIE: ")
                     .append(movie.getPolishTitle())
                     .append(" (")
                     .append(movie.getProductionYear())

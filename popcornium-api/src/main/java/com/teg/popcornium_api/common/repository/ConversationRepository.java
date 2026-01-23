@@ -14,6 +14,6 @@ public interface ConversationRepository extends JpaRepository<Conversation, Stri
 
     List<Conversation> findByUserIdOrderByCreatedDesc(String userId);
 
-    @Query("SELECT m FROM ConversationMessage m WHERE m.conversation = :conv ORDER BY m.created ASC LIMIT 10")
+    @Query("SELECT m FROM ConversationMessage m WHERE m.conversation = :conv ORDER BY m.created DESC LIMIT 10")
     List<ConversationMessage> findLast10(@Param("conv") Conversation conv);
 }

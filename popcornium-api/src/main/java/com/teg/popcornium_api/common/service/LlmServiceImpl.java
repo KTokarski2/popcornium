@@ -21,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -49,6 +50,7 @@ public class LlmServiceImpl implements LlmService {
                 return handleComplex(chatQuery.query(), conversation);
             }
             addMessageToConversation(conversation, chatQuery.query(), MessageSource.USER);
+            conversationRepository.save(conversation);
             QueryStrategy strategy = strategyRegistry.get(contextHandler.getBaseIntention());
             ChatRequest request = strategy.executeStrategy(
                     chatQuery.query(),
@@ -73,6 +75,8 @@ public class LlmServiceImpl implements LlmService {
     @Transactional
     protected ChatResponse handleComplex(String userQuery, Conversation conversation) {
         try {
+            addMessageToConversation(conversation, userQuery, MessageSource.USER);
+            conversationRepository.save(conversation);
             List<ExecutionStep> plan = executionPlanner.plan(userQuery);
 
             for (ExecutionStep step : plan) {
@@ -94,7 +98,6 @@ public class LlmServiceImpl implements LlmService {
                     contextHandler.buildFinalComplexContext(buildHistory(conversation))
             );
             LlmResponse response = aiChatService.chat(finalRequest);
-            addMessageToConversation(conversation, userQuery, MessageSource.USER);
             addMessageToConversation(conversation, response.content(), MessageSource.AGENT);
             conversationRepository.save(conversation);
             return ChatResponse.builder()
@@ -134,14 +137,24 @@ public class LlmServiceImpl implements LlmService {
     }
 
     private String buildHistory(Conversation conversation) {
-        StringBuilder sb = new StringBuilder("CONVERSATION HISTORY:\n");
-        conversationRepository.findLast10(conversation)
-                .forEach(msg -> {
-                    switch (msg.getMessageSource()) {
-                        case AGENT -> sb.append("ASSISTANT MESSAGE:\n").append(msg.getMessageContent()).append("\n");
-                        case USER -> sb.append("USER MESSAGE:\n").append(msg.getMessageContent()).append("\n");
-                    }
-                });
+        StringBuilder sb = new StringBuilder("CONVERSATION HISTORY:\n")
+                .append("\n");
+        List<ConversationMessage> messages = conversationRepository.findLast10(conversation);
+
+        Collections.reverse(messages);
+
+        messages.forEach(msg -> {
+            switch (msg.getMessageSource()) {
+                case AGENT -> sb.append("ASSISTANT MESSAGE:\n")
+                        .append(msg.getMessageContent())
+                        .append("\n")
+                        .append("\n");
+                case USER -> sb.append("USER MESSAGE:\n")
+                        .append(msg.getMessageContent())
+                        .append("\n")
+                        .append("\n");
+            }
+        });
         return sb.toString();
     }
 }
