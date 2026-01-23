@@ -22,7 +22,7 @@ public class AzureOpenAiTestController {
 
     @PostMapping("/chat")
     public ResponseEntity<ChatResponse> chat(@RequestBody ChatQuery query) throws JsonProcessingException, com.azure.json.implementation.jackson.core.JsonProcessingException {
-        return ResponseEntity.ok(llmService.handle(query, null, RagType.GRAPH));
+        return ResponseEntity.ok(llmService.handle(query, RagType.GRAPH));
     }
 
     @GetMapping("/embedAll")

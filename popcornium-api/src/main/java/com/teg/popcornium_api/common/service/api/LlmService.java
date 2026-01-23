@@ -9,5 +9,5 @@ import java.util.List;
 
 public interface LlmService {
 
-    ChatResponse handle(ChatQuery chatQuery, List<ChatMessage> history, RagType ragType);
+    ChatResponse handle(ChatQuery chatQuery, RagType ragType);
 }

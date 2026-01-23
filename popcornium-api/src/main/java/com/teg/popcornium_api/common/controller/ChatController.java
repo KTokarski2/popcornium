@@ -21,7 +21,7 @@ public class ChatController {
 
     @PostMapping("/chat")
     public ResponseEntity<ChatResponse> chat(@RequestBody ChatQuery query) {
-        return ResponseEntity.ok(llmService.handle(query, null, RagType.valueOf(query.ragType())));
+        return ResponseEntity.ok(llmService.handle(query, RagType.valueOf(query.ragType())));
     }
 
     @GetMapping("/graph")

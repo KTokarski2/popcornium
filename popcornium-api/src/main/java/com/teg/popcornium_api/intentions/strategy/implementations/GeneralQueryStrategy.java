@@ -24,7 +24,7 @@ public class GeneralQueryStrategy implements QueryStrategy {
     }
 
     @Override
-    public ChatRequest executeStrategy(String userQuery, Optional<String> context, List<ChatMessage> history) {
+    public ChatRequest executeStrategy(String userQuery, Optional<String> context) {
         return ChatRequest.builder()
                 .systemPrompt(promptLoader.load("general/system.md"))
                 .userMessage(userQuery)

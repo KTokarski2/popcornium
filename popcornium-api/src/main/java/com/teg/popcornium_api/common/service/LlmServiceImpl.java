@@ -40,13 +40,13 @@ public class LlmServiceImpl implements LlmService {
 
     @Override
     @Transactional
-    public ChatResponse handle(ChatQuery chatQuery, List<ChatMessage> history, RagType ragType) {
+    public ChatResponse handle(ChatQuery chatQuery, RagType ragType) {
         try {
             log.info("Handling user query with RAG type: {}", ragType);
             contextHandler.createFreshContext(chatQuery.query(), ragType);
             Conversation conversation = getConversation(chatQuery);
             if (contextHandler.getBaseIntention() == Intention.COMPLEX) {
-                return handleComplex(chatQuery.query(), conversation, history);
+                return handleComplex(chatQuery.query(), conversation);
             }
             addMessageToConversation(conversation, chatQuery.query(), MessageSource.USER);
             QueryStrategy strategy = strategyRegistry.get(contextHandler.getBaseIntention());
@@ -55,8 +55,7 @@ public class LlmServiceImpl implements LlmService {
                     contextHandler.handleBaseIntentionContext(
                             chatQuery.query(),
                             contextHandler.getBaseIntention(),
-                            buildHistory(conversation)),
-                    history
+                            buildHistory(conversation))
             );
             LlmResponse response = aiChatService.chat(request);
             addMessageToConversation(conversation, response.content(), MessageSource.AGENT);
@@ -72,7 +71,7 @@ public class LlmServiceImpl implements LlmService {
     }
 
     @Transactional
-    protected ChatResponse handleComplex(String userQuery, Conversation conversation, List<ChatMessage> history) {
+    protected ChatResponse handleComplex(String userQuery, Conversation conversation) {
         try {
             List<ExecutionStep> plan = executionPlanner.plan(userQuery);
 
@@ -82,8 +81,7 @@ public class LlmServiceImpl implements LlmService {
 
                 ChatRequest request = strategy.executeStrategy(
                         step.stepQuery(),
-                        contextHandler.handleComplexIntentionContext(userQuery),
-                        history
+                        contextHandler.handleComplexIntentionContext(userQuery)
                 );
 
                 LlmResponse response = aiChatService.chat(request);
@@ -93,8 +91,7 @@ public class LlmServiceImpl implements LlmService {
             QueryStrategy finalStrategy = strategyRegistry.get(Intention.GENERAL);
             ChatRequest finalRequest = finalStrategy.executeStrategy(
                     userQuery,
-                    contextHandler.buildFinalComplexContext(buildHistory(conversation)),
-                    history
+                    contextHandler.buildFinalComplexContext(buildHistory(conversation))
             );
             LlmResponse response = aiChatService.chat(finalRequest);
             addMessageToConversation(conversation, userQuery, MessageSource.USER);

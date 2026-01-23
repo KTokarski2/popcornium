@@ -9,7 +9,6 @@ import java.util.Map;
 public record ChatRequest(
    String systemPrompt,
    String userMessage,
-   List<ChatMessage> conversationHistory,
    String context,
    Integer maxTokens,
    Double temperature,

@@ -26,7 +26,7 @@ public class TemporalQueryStrategy implements QueryStrategy {
     }
 
     @Override
-    public ChatRequest executeStrategy(String userQuery, Optional<String> context, List<ChatMessage> history) {
+    public ChatRequest executeStrategy(String userQuery, Optional<String> context) {
         String systemPrompt = promptLoader.load("temporal/system.md");
         String executionTemplate = promptLoader.load("temporal/execution.md");
         String userPrompt = promptRenderer.render(executionTemplate, Map.of(
@@ -36,7 +36,6 @@ public class TemporalQueryStrategy implements QueryStrategy {
         return ChatRequest.builder()
                 .systemPrompt(systemPrompt)
                 .userMessage(userPrompt)
-                .conversationHistory(history)
                 .temperature(0.3)
                 .maxTokens(400)
                 .metadata(Map.of("intention", "TEMPORAL"))
