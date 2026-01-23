@@ -5,7 +5,7 @@ import { ThumbUp, ThumbDown, Add } from '@mui/icons-material';
 import { PageContainer, ContentContainer, StyledButton, StyledPaper } from '../components/Styled';
 import Navigation from '../components/Navigation';
 import { styled } from '@mui/material/styles';
-import { getMovieDetails } from '../api/movieService';
+import { getMovieDetails, likeMovie, dislikeMovie } from '../api/movieService';
 
 const PosterImage = styled('img')({
   width: '100%',
@@ -60,8 +60,20 @@ const MovieDetailsPage = () => {
     fetchMovieDetails();
   }, [id]);
 
-  const handleLike = (type) => {
-    setLikeStatus(likeStatus === type ? null : type);
+  const handleLike = async (type) => {
+    try {
+      const newStatus = likeStatus === type ? null : type;
+      
+      if (newStatus === 'like') {
+        await likeMovie(id);
+      } else if (newStatus === 'dislike') {
+        await dislikeMovie(id);
+      }
+      
+      setLikeStatus(newStatus);
+    } catch (error) {
+      console.error('Error updating rating:', error);
+    }
   };
 
   if (loading) {

@@ -103,11 +103,13 @@ public class MovieServiceImpl implements MovieService {
                 .map(this::mapActor)
                 .toList();
 
+        UserRating rating = resolveUserRating(movie);
+
         return new MovieDetailsDto(
                 movie.getPolishTitle(),
                 movie.getOriginalTitle(),
                 movie.getProductionYear(),
-                resolveUserRating(movie),
+                rating,
                 movie.getRating(),
                 movie.getRatingCount(),
                 poster,
@@ -118,12 +120,11 @@ public class MovieServiceImpl implements MovieService {
     }
 
     private UserRating resolveUserRating(Movie movie) {
-
         return currentUserService.getCurrentUserOptional()
                 .flatMap(user ->
                         movie.getRatings()
                                 .stream()
-                                .filter(r -> r.getUser().equals(user))
+                                .filter(r -> r.getUser().getId().equals(user.getId()))
                                 .findFirst()
                 )
                 .map(MovieRating::getRating)
