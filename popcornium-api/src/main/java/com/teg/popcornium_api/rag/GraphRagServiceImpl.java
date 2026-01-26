@@ -25,6 +25,21 @@ public class GraphRagServiceImpl implements GraphRagService {
     private final Neo4jClient neo4jClient;
     private final GraphSchemaService graphSchemaService;
 
+    private static final String RAG_PROMPT = """
+            You are a Neo4j Cypher expert.
+
+                Graph schema:
+
+                %s
+
+                Rules:
+                - Generate READ-ONLY Cypher queries only
+                - Do NOT use CREATE, DELETE, MERGE, SET
+                - Return human-readable fields (titles, names, years, ratings)
+                - Always include LIMIT %s or lower
+                - Output ONLY Cypher, no explanations
+            """;
+
     @Override
     public String retrieveContext(String userQuery) {
 
@@ -51,24 +66,16 @@ public class GraphRagServiceImpl implements GraphRagService {
      */
     private String generateCypher(String userQuery) {
 
-        ChatRequest request = ChatRequest.builder().systemPrompt("""
-                You are a Neo4j Cypher expert.
-                
-                Graph schema:
-                (:Movie {id, originalTitle, polishTitle, productionYear, rating})
-                (:Actor {name})-[:ACTED_IN]->(:Movie)
-                (:Director {name})-[:DIRECTED_BY]->(:Movie)
-                (:Category {name})<-[:HAS_CATEGORY]-(:Movie)
-                (:Description {text})<-[:HAS_DESCRIPTION]-(:Movie)
-                (:WikipediaArticle {text})<-[:HAS_WIKI_ARTICLE]-(:Movie)
-                
-                Rules:
-                - Generate READ-ONLY Cypher queries only
-                - Do NOT use CREATE, DELETE, MERGE, SET
-                - Return human-readable fields (titles, names, years, ratings)
-                - Always include LIMIT %d or lower
-                - Output ONLY Cypher, no explanations
-                """.formatted(MAX_ROWS)).userMessage(userQuery).build();
+        ChatRequest request = ChatRequest.builder()
+                .systemPrompt(String.format(
+                        RAG_PROMPT,
+                        graphSchemaService.getSchemaAsString(),
+                        MAX_ROWS))
+                .userMessage(userQuery)
+                .temperature(0.2)
+                .maxTokens(800)
+                .metadata(Map.of("intention", "CYPHER_GENERATION"))
+                .build();
 
 
         LlmResponse response = aiChatService.chat(request);

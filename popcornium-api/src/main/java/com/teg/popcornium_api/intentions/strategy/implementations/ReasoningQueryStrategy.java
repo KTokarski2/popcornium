@@ -26,7 +26,7 @@ public class ReasoningQueryStrategy implements QueryStrategy {
     }
 
     @Override
-    public ChatRequest executeStrategy(String userQuery, Optional<String> context, List<ChatMessage> history) {
+    public ChatRequest executeStrategy(String userQuery, Optional<String> context) {
         String systemPrompt = promptLoader.load("reasoning/system.md");
         String executionTemplate = promptLoader.load("reasoning/execution.md");
         String userPrompt = promptRenderer.render(executionTemplate, Map.of(
@@ -36,7 +36,6 @@ public class ReasoningQueryStrategy implements QueryStrategy {
         return ChatRequest.builder()
                 .systemPrompt(systemPrompt)
                 .userMessage(userPrompt)
-                .conversationHistory(history)
                 .temperature(0.5)
                 .maxTokens(500)
                 .metadata(Map.of("intention", "REASONING"))

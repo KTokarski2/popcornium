@@ -4,7 +4,7 @@ import com.teg.popcornium_api.intentions.IntentionDetector;
 import com.teg.popcornium_api.intentions.model.ExecutionStep;
 import com.teg.popcornium_api.intentions.model.Intention;
 import com.teg.popcornium_api.intentions.model.LlmContext;
-import com.teg.popcornium_api.rag.RagType;
+import com.teg.popcornium_api.rag.types.RagType;
 import com.teg.popcornium_api.rag.api.GraphRagService;
 import com.teg.popcornium_api.rag.api.RagService;
 import lombok.RequiredArgsConstructor;
@@ -37,15 +37,15 @@ public class LlmContextHandler {
         return llmContext.getDetectedBaseIntention();
     }
 
-    public Optional<String> handleBaseIntentionContext(String userQuery, Intention intention) {
+    public Optional<String> handleBaseIntentionContext(String userQuery, Intention intention, String history) {
         if (baseShouldRag()) {
             switch(this.ragType) {
                 case GRAPH -> llmContext.setFinalContext(doGraphRag(userQuery));
                 case NORMAL -> llmContext.setFinalContext(doNormalRag(userQuery, intention));
             }
-            return Optional.of(llmContext.getFinalContext());
+            return Optional.of(appendHistoryToContext(llmContext.getFinalContext(), history));
         }
-        return Optional.empty();
+        return Optional.of(history);
     }
 
     public Optional<String> handleComplexIntentionContext(String userQuery) {
@@ -55,12 +55,15 @@ public class LlmContextHandler {
         return preparePartialResponse(retrievedRagContext, previousResults);
     }
     
-    public Optional<String> buildFinalComplexContext() {
+    public Optional<String> buildFinalComplexContext(String history) {
         if (!llmContext.hasAny()) {
             return Optional.empty();
         }
         llmContext.buildFinalContext();
-        return Optional.of(this.llmContext.getFinalContext());
+        return Optional.of(appendHistoryToContext(
+                this.llmContext.getFinalContext(),
+                history
+        ));
     }
 
     public void setCurrentStep(ExecutionStep currentStep) {
@@ -129,5 +132,11 @@ public class LlmContextHandler {
         sb.append("\nUse this information to answer the question\n\n");
 
         return Optional.of(sb.toString());
+    }
+
+    private String appendHistoryToContext(String context, String history) {
+        StringBuilder sb = new StringBuilder(history).append("\n");
+        sb.append(context);
+        return sb.toString();
     }
 }

@@ -15,15 +15,18 @@ import com.teg.popcornium_api.intentions.model.Intention;
 import com.teg.popcornium_api.intentions.service.LlmContextHandler;
 import com.teg.popcornium_api.intentions.strategy.QueryStrategy;
 import com.teg.popcornium_api.intentions.strategy.QueryStrategyRegistry;
-import com.teg.popcornium_api.rag.RagType;
+import com.teg.popcornium_api.rag.types.RagType;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class LlmServiceImpl implements LlmService {
 
     private static final String ERROR_JSON_PROCESSING = "JSON processing error during LLM request handling";
@@ -38,19 +41,23 @@ public class LlmServiceImpl implements LlmService {
 
     @Override
     @Transactional
-    public ChatResponse handle(ChatQuery chatQuery, List<ChatMessage> history, RagType ragType) {
+    public ChatResponse handle(ChatQuery chatQuery, RagType ragType) {
         try {
+            log.info("Handling user query with RAG type: {}", ragType);
             contextHandler.createFreshContext(chatQuery.query(), ragType);
             Conversation conversation = getConversation(chatQuery);
             if (contextHandler.getBaseIntention() == Intention.COMPLEX) {
-                return handleComplex(chatQuery.query(), conversation, history);
+                return handleComplex(chatQuery.query(), conversation);
             }
             addMessageToConversation(conversation, chatQuery.query(), MessageSource.USER);
+            conversationRepository.save(conversation);
             QueryStrategy strategy = strategyRegistry.get(contextHandler.getBaseIntention());
             ChatRequest request = strategy.executeStrategy(
                     chatQuery.query(),
-                    contextHandler.handleBaseIntentionContext(chatQuery.query(), contextHandler.getBaseIntention()),
-                    history
+                    contextHandler.handleBaseIntentionContext(
+                            chatQuery.query(),
+                            contextHandler.getBaseIntention(),
+                            buildHistory(conversation))
             );
             LlmResponse response = aiChatService.chat(request);
             addMessageToConversation(conversation, response.content(), MessageSource.AGENT);
@@ -66,8 +73,10 @@ public class LlmServiceImpl implements LlmService {
     }
 
     @Transactional
-    protected ChatResponse handleComplex(String userQuery, Conversation conversation, List<ChatMessage> history) {
+    protected ChatResponse handleComplex(String userQuery, Conversation conversation) {
         try {
+            addMessageToConversation(conversation, userQuery, MessageSource.USER);
+            conversationRepository.save(conversation);
             List<ExecutionStep> plan = executionPlanner.plan(userQuery);
 
             for (ExecutionStep step : plan) {
@@ -76,8 +85,7 @@ public class LlmServiceImpl implements LlmService {
 
                 ChatRequest request = strategy.executeStrategy(
                         step.stepQuery(),
-                        contextHandler.handleComplexIntentionContext(userQuery),
-                        history
+                        contextHandler.handleComplexIntentionContext(userQuery)
                 );
 
                 LlmResponse response = aiChatService.chat(request);
@@ -87,11 +95,9 @@ public class LlmServiceImpl implements LlmService {
             QueryStrategy finalStrategy = strategyRegistry.get(Intention.GENERAL);
             ChatRequest finalRequest = finalStrategy.executeStrategy(
                     userQuery,
-                    contextHandler.buildFinalComplexContext(),
-                    history
+                    contextHandler.buildFinalComplexContext(buildHistory(conversation))
             );
             LlmResponse response = aiChatService.chat(finalRequest);
-            addMessageToConversation(conversation, userQuery, MessageSource.USER);
             addMessageToConversation(conversation, response.content(), MessageSource.AGENT);
             conversationRepository.save(conversation);
             return ChatResponse.builder()
@@ -128,5 +134,27 @@ public class LlmServiceImpl implements LlmService {
         message.setMessageSource(source);
         message.setConversation(conversation);
         conversation.getConversationMessages().add(message);
+    }
+
+    private String buildHistory(Conversation conversation) {
+        StringBuilder sb = new StringBuilder("CONVERSATION HISTORY:\n")
+                .append("\n");
+        List<ConversationMessage> messages = conversationRepository.findLast10(conversation);
+
+        Collections.reverse(messages);
+
+        messages.forEach(msg -> {
+            switch (msg.getMessageSource()) {
+                case AGENT -> sb.append("ASSISTANT MESSAGE:\n")
+                        .append(msg.getMessageContent())
+                        .append("\n")
+                        .append("\n");
+                case USER -> sb.append("USER MESSAGE:\n")
+                        .append(msg.getMessageContent())
+                        .append("\n")
+                        .append("\n");
+            }
+        });
+        return sb.toString();
     }
 }

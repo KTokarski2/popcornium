@@ -36,7 +36,7 @@ public class FilteringQueryStrategy implements QueryStrategy {
     }
 
     @Override
-    public ChatRequest executeStrategy(String userQuery, Optional<String> context, List<ChatMessage> history) throws JsonProcessingException, com.azure.json.implementation.jackson.core.JsonProcessingException {
+    public ChatRequest executeStrategy(String userQuery, Optional<String> context) throws JsonProcessingException, com.azure.json.implementation.jackson.core.JsonProcessingException {
         String systemPrompt = promptLoader.load("filtering/system.md");
         String executionTemplate = promptLoader.load("filtering/execution.md");
         String userPrompt = promptRenderer.render(executionTemplate, Map.of(
@@ -46,7 +46,6 @@ public class FilteringQueryStrategy implements QueryStrategy {
                 .systemPrompt(systemPrompt)
                 .userMessage(userPrompt)
                 .context(null)
-                .conversationHistory(history)
                 .temperature(0.2)
                 .maxTokens(300)
                 .metadata(Map.of("intention", "FILTERING"))

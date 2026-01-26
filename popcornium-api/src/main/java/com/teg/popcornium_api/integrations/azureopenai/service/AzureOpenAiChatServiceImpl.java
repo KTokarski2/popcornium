@@ -3,7 +3,6 @@ package com.teg.popcornium_api.integrations.azureopenai.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.teg.popcornium_api.common.model.Completion;
-import com.teg.popcornium_api.common.model.dto.ChatMessage;
 import com.teg.popcornium_api.common.model.dto.ChatRequest;
 import com.teg.popcornium_api.common.model.dto.LlmResponse;
 import com.teg.popcornium_api.common.repository.CompletionRepository;
@@ -12,7 +11,6 @@ import com.teg.popcornium_api.common.service.api.CurrentUserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.azure.openai.AzureOpenAiChatModel;
-import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -95,16 +93,7 @@ public class AzureOpenAiChatServiceImpl implements AiChatService {
             messages.add(new SystemMessage(request.systemPrompt()));
         }
         if (request.context() != null && !request.context().isEmpty()) {
-            messages.add(new SystemMessage("Context: " + request.context()));
-        }
-        if (request.conversationHistory() != null) {
-            for (ChatMessage historyMessage : request.conversationHistory()) {
-                if ("user".equalsIgnoreCase(historyMessage.role())) {
-                    messages.add(new UserMessage(historyMessage.content()));
-                } else if ("assistant".equalsIgnoreCase(historyMessage.role())) {
-                    messages.add(new AssistantMessage(historyMessage.content()));
-                }
-            }
+            messages.add(new SystemMessage("CONTEXT: " + request.context()));
         }
         messages.add(new UserMessage(request.userMessage()));
         return messages;
@@ -141,21 +130,14 @@ public class AzureOpenAiChatServiceImpl implements AiChatService {
         StringBuilder prompt = new StringBuilder();
 
         if (request.systemPrompt() != null) {
-            prompt.append("System: ").append(request.systemPrompt()).append("\n\n");
+            prompt.append("SYSTEM: ").append(request.systemPrompt()).append("\n\n");
         }
 
         if (request.context() != null) {
-            prompt.append("Context: ").append(request.context()).append("\n\n");
+            prompt.append("CONTEXT: ").append(request.context()).append("\n\n");
         }
 
-        if (request.conversationHistory() != null) {
-            for (ChatMessage msg : request.conversationHistory()) {
-                prompt.append(msg.role()).append(": ").append(msg.content()).append("\n");
-            }
-            prompt.append("\n");
-        }
-
-        prompt.append("User: ").append(request.userMessage());
+        prompt.append("USER: ").append(request.userMessage());
 
         return prompt.toString();
     }

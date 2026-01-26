@@ -12,5 +12,5 @@ public interface QueryStrategy {
 
     Intention getIntention();
 
-    ChatRequest executeStrategy(String userQuery, Optional<String> context, List<ChatMessage> history) throws JsonProcessingException, com.azure.json.implementation.jackson.core.JsonProcessingException;
+    ChatRequest executeStrategy(String userQuery, Optional<String> context) throws JsonProcessingException, com.azure.json.implementation.jackson.core.JsonProcessingException;
 }

@@ -1,10 +1,11 @@
 import apiClient from './config/apiClient';
 
 const chatService = {
-  sendMessage: async (message, conversationId = null) => {
+  sendMessage: async (message, conversationId = null, ragType = 'NORMAL') => {
     const data = await apiClient.post('/completions/chat', { 
       query: message,
-      conversationId: conversationId 
+      conversationId: conversationId,
+      ragType: ragType
     });
     return {
       content: data.content,

@@ -16,7 +16,7 @@ public class GraphSchemaService {
     private final Driver driver;
 
     public String getSchemaAsString() {
-        StringBuilder sb = new StringBuilder("Schemat bazy Neo4j:\n");
+        StringBuilder sb = new StringBuilder("\n");
 
         try (Session session = driver.session()) {
             appendNodesSection(session, sb);
@@ -38,7 +38,7 @@ public class GraphSchemaService {
     }
 
     private void appendRelationshipsSection(Session session, StringBuilder sb) {
-        sb.append("Relacje:\n");
+        sb.append("Relations:\n");
 
         List<String> relTypes = getRelationshipTypes(session);
 
@@ -74,7 +74,7 @@ public class GraphSchemaService {
     private String getRelationshipLine(Session session, String type) {
         return session.run("""
         MATCH ()-[r:%s]->()
-        RETURN 
+        RETURN
             labels(startNode(r))[0] AS source,
             labels(endNode(r))[0] AS target
         LIMIT 1
@@ -83,7 +83,7 @@ public class GraphSchemaService {
                     String source = r.get("source").asString(null);
                     String target = r.get("target").asString(null);
                     if (source == null || target == null) {
-                        return "- [:" + type + "] (kierunek nieokreślony)";
+                        return "- [:" + type + "] (unspecified order)";
                     }
                     return "- (:" + source + ")-[:" + type + "]->(:" + target + ")";
                 })

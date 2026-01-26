@@ -5,7 +5,7 @@ import com.teg.popcornium_api.common.model.dto.ChatQuery;
 import com.teg.popcornium_api.common.model.dto.ChatResponse;
 import com.teg.popcornium_api.common.service.LlmServiceImpl;
 import com.teg.popcornium_api.embedding.service.api.EmbeddingService;
-import com.teg.popcornium_api.rag.RagType;
+import com.teg.popcornium_api.rag.types.RagType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -22,7 +22,7 @@ public class AzureOpenAiTestController {
 
     @PostMapping("/chat")
     public ResponseEntity<ChatResponse> chat(@RequestBody ChatQuery query) throws JsonProcessingException, com.azure.json.implementation.jackson.core.JsonProcessingException {
-        return ResponseEntity.ok(llmService.handle(query, null, RagType.GRAPH));
+        return ResponseEntity.ok(llmService.handle(query, RagType.GRAPH));
     }
 
     @GetMapping("/embedAll")

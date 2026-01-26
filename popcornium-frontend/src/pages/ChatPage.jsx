@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Box, Typography, TextField, IconButton, Paper, CircularProgress, Button } from '@mui/material';
+import { Box, Typography, TextField, IconButton, Paper, CircularProgress, Button, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
 import { Send, Add } from '@mui/icons-material';
 import { PageContainer, ContentContainer } from '../components/Styled';
 import Navigation from '../components/Navigation';
@@ -8,8 +8,9 @@ import { sendMessage, getConversations, getConversationDetail } from '../api/cha
 
 const ChatContainer = styled(Box)({
   display: 'flex',
-  height: 'calc(100vh - 80px)',
+  height: 'calc(100vh - 128px)',
   gap: '24px',
+  overflow: 'hidden',
 });
 
 const HistoryPanel = styled(Paper)({
@@ -76,6 +77,7 @@ const ChatPage = () => {
   const [conversations, setConversations] = useState([]);
   const [currentConversationId, setCurrentConversationId] = useState(null);
   const [loadingConversations, setLoadingConversations] = useState(true);
+  const [ragType, setRagType] = useState('NORMAL');
 
   useEffect(() => {
     fetchConversations();
@@ -132,7 +134,7 @@ const ChatPage = () => {
       setLoading(true);
 
       try {
-        const response = await sendMessage(messageText, currentConversationId);
+        const response = await sendMessage(messageText, currentConversationId, ragType);
         
         const aiResponse = {
           id: messages.length + 2,
@@ -163,8 +165,8 @@ const ChatPage = () => {
   return (
     <>
       <Navigation />
-      <PageContainer>
-        <ContentContainer>
+      <PageContainer sx={{ height: '100vh', overflow: 'hidden' }}>
+        <ContentContainer sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
           <ChatContainer>
             <HistoryPanel>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
@@ -214,6 +216,51 @@ const ChatPage = () => {
             </HistoryPanel>
 
             <ChatPanel>
+              <Box sx={{ 
+                padding: '16px 24px', 
+                borderBottom: '1px solid #333333',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 2
+              }}>
+                <Typography variant="body2" sx={{ color: '#ffffff', fontWeight: 600 }}>
+                  RAG Type:
+                </Typography>
+                <Select
+                  value={ragType}
+                  onChange={(e) => setRagType(e.target.value)}
+                  size="small"
+                  sx={{
+                    minWidth: 140,
+                    color: '#ffffff',
+                    backgroundColor: '#262626',
+                    borderRadius: '8px',
+                    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#444444' },
+                    '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#666666' },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#ffffff' },
+                    '& .MuiSvgIcon-root': { color: '#ffffff' },
+                  }}
+                  MenuProps={{
+                    PaperProps: {
+                      sx: {
+                        backgroundColor: '#262626',
+                        '& .MuiMenuItem-root': {
+                          color: '#ffffff',
+                          '&:hover': { backgroundColor: '#333333' },
+                          '&.Mui-selected': { backgroundColor: '#444444' },
+                          '&.Mui-selected:hover': { backgroundColor: '#555555' },
+                        },
+                      },
+                    },
+                  }}
+                >
+                  <MenuItem value="NORMAL">Normal</MenuItem>
+                  <MenuItem value="GRAPH">Graph</MenuItem>
+                </Select>
+                <Typography variant="caption" sx={{ color: '#888888', ml: 'auto' }}>
+                  {ragType === 'GRAPH' ? 'Using graph-based retrieval' : 'Using standard retrieval'}
+                </Typography>
+              </Box>
               <MessagesContainer>
                 {messages.map((message) => (
                   <Message key={message.id} isUser={message.isUser}>

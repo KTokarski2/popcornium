@@ -48,7 +48,15 @@ const movieService = {
       actors: sortedActors,
     };
   },
+
+  likeMovie: async (movieId) => {
+    await apiClient.post(`/users/movies/${movieId}/like`);
+  },
+
+  dislikeMovie: async (movieId) => {
+    await apiClient.post(`/users/movies/${movieId}/dislike`);
+  },
 };
 
-export const { getMovies, getMovieDetails } = movieService;
+export const { getMovies, getMovieDetails, likeMovie, dislikeMovie } = movieService;
 export default movieService;

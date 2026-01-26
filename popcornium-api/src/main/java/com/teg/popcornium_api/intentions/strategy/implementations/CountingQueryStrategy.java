@@ -26,7 +26,7 @@ public class CountingQueryStrategy implements QueryStrategy {
     }
 
     @Override
-    public ChatRequest executeStrategy(String userQuery, Optional<String> context, List<ChatMessage> history) {
+    public ChatRequest executeStrategy(String userQuery, Optional<String> context) {
         String systemPrompt = promptLoader.load("counting/system.md");
         String executionTemplate = promptLoader.load("counting/execution.md");
         String userPrompt = promptRenderer.render(executionTemplate, Map.of(
@@ -36,7 +36,6 @@ public class CountingQueryStrategy implements QueryStrategy {
         return ChatRequest.builder()
                 .systemPrompt(systemPrompt)
                 .userMessage(userPrompt)
-                .conversationHistory(history)
                 .temperature(0.0)
                 .maxTokens(300)
                 .metadata(Map.of("intention", "COUNTING"))
