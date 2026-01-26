@@ -4,17 +4,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.teg.popcornium_api.common.model.Movie;
 import com.teg.popcornium_api.common.repository.MovieRepository;
 import com.teg.popcornium_api.common.util.DataConversionUtil;
-import com.teg.popcornium_api.embedding.service.MovieSavedEvent;
+import com.teg.popcornium_api.integrations.minio.service.MinioService;
 import com.teg.popcornium_api.seeder.filmweb.dto.MovieImportDto;
 import com.teg.popcornium_api.seeder.filmweb.mapper.MovieMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -31,7 +31,7 @@ public class FileImportService {
     private final MovieMapper movieMapper;
     private final ObjectMapper objectMapper;
     private final DataConversionUtil conversionUtil;
-    private final ApplicationEventPublisher eventPublisher;
+    private final MinioService minioService;
 
     @Value("${MOVIE_IMPORT_BASE_PATH:${movie.import.base-path}}")
     private String baseFolderPath;
@@ -123,10 +123,8 @@ public class FileImportService {
                 movieToSave.setDirector(newMovieData.getDirector());
                 movieToSave.setModified(LocalDateTime.now());
             }
-
+            movieToSave.setPosterMinioId(savePosterFile(movieDirPath, folderName));
             Movie savedMovie = movieRepository.save(movieToSave);
-
-            eventPublisher.publishEvent(new MovieSavedEvent(savedMovie.getId()));
 
             log.info("{} movie: {} ({}) and published indexing event.",
                     isNew ? "Successfully imported NEW" : "Updated existing",
@@ -145,4 +143,21 @@ public class FileImportService {
 
         return 0;
     }
+
+    private String savePosterFile(Path movieDirPath, String folderName) {
+        Path posterPath = movieDirPath.resolve("poster.jpg");
+        if (Files.exists(posterPath) && Files.isRegularFile(posterPath)) {
+            try {
+                String posterMinioId = minioService.upload(posterPath, "image/jpeg");
+                log.info("Uploaded poster for movie: {}", folderName);
+                return posterMinioId;
+            } catch (Exception e) {
+                log.error("Failed to upload poster for movie: {}. Details: {}", folderName, e.getMessage());
+            }
+        } else {
+            log.warn("Poster file not found in directory: {}", folderName);
+        }
+        return null;
+    }
+
 }

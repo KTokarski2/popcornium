@@ -1,6 +1,6 @@
 package com.teg.popcornium_api.integrations.wikipedia.service;
 
-import com.teg.popcornium_api.common.model.Language;
+import com.teg.popcornium_api.common.model.types.Language;
 import com.teg.popcornium_api.common.model.Movie;
 import com.teg.popcornium_api.common.model.WikipediaArticle;
 import com.teg.popcornium_api.common.repository.MovieRepository;
@@ -90,6 +90,8 @@ public class WikipediaApiServiceImpl implements WikipediaApiService {
         LocalDateTime now = LocalDateTime.now();
 
         WikipediaArticle article = new WikipediaArticle();
+        article.setCreated(now);
+        article.setModified(now);
         article.setText(dto.content());
         article.setLanguage(Language.PL);
         article.setMovie(movie);

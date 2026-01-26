@@ -1,16 +1,21 @@
 package com.teg.popcornium_api.common.repository;
 
 import com.teg.popcornium_api.common.model.Movie;
+import org.jetbrains.annotations.NotNull;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface MovieRepository extends JpaRepository<Movie, String> {
+public interface MovieRepository extends JpaRepository<Movie, String>, JpaSpecificationExecutor<Movie> {
+
     Optional<Movie> findByOriginalTitleAndProductionYear(String originalTitle, Integer productionYear);
 
     @Query("SELECT m FROM Movie m " +
@@ -19,7 +24,8 @@ public interface MovieRepository extends JpaRepository<Movie, String> {
             "LEFT JOIN FETCH ma.actor a " +
             "LEFT JOIN FETCH m.movieCategories mc " +
             "LEFT JOIN FETCH mc.category c " +
-            "LEFT JOIN FETCH m.director dir")
+            "LEFT JOIN FETCH m.director dir" +
+            "LEFT JOIN FETCH m.wikipediaArticles wa")
     List<Movie> findAllWithDetails();
 
     @Query("SELECT DISTINCT m FROM Movie m " +
@@ -28,4 +34,22 @@ public interface MovieRepository extends JpaRepository<Movie, String> {
             "LEFT JOIN FETCH m.descriptions " +
             "WHERE m.id = :id")
     Optional<Movie> findByIdWithCategories(@Param("id") String id);
+
+    @Query("""
+    SELECT DISTINCT m FROM Movie m
+    LEFT JOIN FETCH m.movieActors
+    LEFT JOIN FETCH m.movieCategories mc
+    LEFT JOIN FETCH mc.category
+    LEFT JOIN FETCH m.director
+""")
+    List<Movie> findAllWithGraphData();
+
+    @NotNull
+    @EntityGraph(attributePaths = {
+            "director",
+            "descriptions",
+            "movieActors.actor",
+            "ratings.user"
+    })
+    Optional<Movie> findById(@NotNull String id);
 }

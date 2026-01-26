@@ -1,8 +1,8 @@
 package com.teg.popcornium_api.seeder.filmweb;
 
 import com.teg.popcornium_api.common.repository.MovieRepository;
-import com.teg.popcornium_api.integrations.wikipedia.exception.ArticleNotFoundException;
-import com.teg.popcornium_api.integrations.wikipedia.service.api.WikipediaApiService;
+import com.teg.popcornium_api.common.service.GraphResetService;
+import com.teg.popcornium_api.common.service.GraphSyncService;
 import com.teg.popcornium_api.seeder.filmweb.service.FileImportService;
 import com.teg.popcornium_api.seeder.filmweb.service.ImdbFetcherService;
 import com.teg.popcornium_api.seeder.filmweb.service.WikipediaFetcherService;

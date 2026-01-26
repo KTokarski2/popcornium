@@ -1,5 +1,6 @@
 package com.teg.popcornium_api.common.model;
 
+import com.teg.popcornium_api.common.model.types.Language;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -10,7 +11,6 @@ import lombok.Setter;
 @Setter
 public class WikipediaArticle extends AbstractEntity {
 
-    @Lob
     @Column(name = "text", columnDefinition = "TEXT")
     private String text;
 

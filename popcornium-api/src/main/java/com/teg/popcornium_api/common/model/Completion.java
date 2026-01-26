@@ -1,9 +1,6 @@
 package com.teg.popcornium_api.common.model;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Index;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -45,4 +42,8 @@ public class Completion extends AbstractEntity {
 
     @Column(columnDefinition = "TEXT")
     private String metadata;
+
+    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.PERSIST)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 }

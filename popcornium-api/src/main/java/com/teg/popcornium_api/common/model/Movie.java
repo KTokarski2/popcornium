@@ -28,6 +28,9 @@ public class Movie extends AbstractEntity {
     @Column(name = "rating_count")
     private String ratingCount;
 
+    @Column(name = "poster_minio_id")
+    private String posterMinioId;
+
     @Column(name = "poster_url")
     private String posterUrl;
 
@@ -46,6 +49,9 @@ public class Movie extends AbstractEntity {
 
     @OneToMany(mappedBy = "movie", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Description> descriptions = new HashSet<>();
+
+    @OneToMany(mappedBy = "movie", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<MovieRating> ratings = new HashSet<>();
 
     public void addCategory(Category category) {
         boolean alreadyAdded = movieCategories.stream()

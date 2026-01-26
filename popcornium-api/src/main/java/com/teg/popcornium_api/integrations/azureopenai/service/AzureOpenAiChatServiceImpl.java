@@ -3,15 +3,14 @@ package com.teg.popcornium_api.integrations.azureopenai.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.teg.popcornium_api.common.model.Completion;
-import com.teg.popcornium_api.common.model.dto.ChatMessage;
 import com.teg.popcornium_api.common.model.dto.ChatRequest;
-import com.teg.popcornium_api.common.model.dto.ChatResponse;
+import com.teg.popcornium_api.common.model.dto.LlmResponse;
 import com.teg.popcornium_api.common.repository.CompletionRepository;
-import com.teg.popcornium_api.common.service.AiChatService;
+import com.teg.popcornium_api.common.service.api.AiChatService;
+import com.teg.popcornium_api.common.service.api.CurrentUserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.azure.openai.AzureOpenAiChatModel;
-import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -19,7 +18,6 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -39,9 +37,10 @@ public class AzureOpenAiChatServiceImpl implements AiChatService {
     private final AzureOpenAiChatModel chatModel;
     private final CompletionRepository completionRepository;
     private final ObjectMapper objectMapper;
+    private final CurrentUserService currentUserService;
 
     @Override
-    public ChatResponse chat(ChatRequest chatRequest) {
+    public LlmResponse chat(ChatRequest chatRequest) {
         validateRequest(chatRequest);
         try {
             log.debug(MSG_SENDING_CHAT_REQUEST);
@@ -52,7 +51,7 @@ public class AzureOpenAiChatServiceImpl implements AiChatService {
             Integer totalTokens = response.getMetadata().getUsage().getTotalTokens();
             Integer promptTokens = response.getMetadata().getUsage().getPromptTokens();
             Integer completionTokens = response.getMetadata().getUsage().getCompletionTokens();
-            ChatResponse chatResponse = ChatResponse.builder()
+            LlmResponse llmResponse = LlmResponse.builder()
                     .content(content)
                     .model(response.getMetadata().getModel())
                     .promptTokens(promptTokens)
@@ -61,8 +60,8 @@ public class AzureOpenAiChatServiceImpl implements AiChatService {
                     .finishReason(response.getResult().getMetadata().getFinishReason())
                     .build();
             log.debug(MSG_RECEIVED_RESPONSE, totalTokens);
-            saveCompletion(chatRequest, chatResponse);
-            return chatResponse;
+            saveCompletion(chatRequest, llmResponse);
+            return llmResponse;
         } catch (Exception e) {
             log.error(ERROR_FAILED_TO_COMPLETE_CHAT, e);
             throw new RuntimeException(ERROR_FAILED_TO_COMPLETE_CHAT, e);
@@ -94,25 +93,15 @@ public class AzureOpenAiChatServiceImpl implements AiChatService {
             messages.add(new SystemMessage(request.systemPrompt()));
         }
         if (request.context() != null && !request.context().isEmpty()) {
-            messages.add(new SystemMessage("Context: " + request.context()));
-        }
-        if (request.conversationHistory() != null) {
-            for (ChatMessage historyMessage : request.conversationHistory()) {
-                if ("user".equalsIgnoreCase(historyMessage.role())) {
-                    messages.add(new UserMessage(historyMessage.content()));
-                } else if ("assistant".equalsIgnoreCase(historyMessage.role())) {
-                    messages.add(new AssistantMessage(historyMessage.content()));
-                }
-            }
+            messages.add(new SystemMessage("CONTEXT: " + request.context()));
         }
         messages.add(new UserMessage(request.userMessage()));
         return messages;
     }
 
-    private void saveCompletion(ChatRequest request, ChatResponse response) {
+    private void saveCompletion(ChatRequest request, LlmResponse response) {
         try {
             String fullPrompt = buildFullPrompt(request);
-            LocalDateTime now = LocalDateTime.now();
             String metadataJson = request.metadata() != null
                     ? objectMapper.writeValueAsString(request.metadata())
                     : null;
@@ -127,6 +116,7 @@ public class AzureOpenAiChatServiceImpl implements AiChatService {
             completion.setMaxTokens(request.maxTokens() != null ? request.maxTokens() : 1000);
             completion.setFinishReason(response.finishReason());
             completion.setMetadata(metadataJson);
+            completion.setUser(currentUserService.getCurrentUser());
             Completion saved = completionRepository.save(completion);
             log.debug(MSG_SAVED_COMPLETION, saved.getId());
         } catch (JsonProcessingException e) {
@@ -140,21 +130,14 @@ public class AzureOpenAiChatServiceImpl implements AiChatService {
         StringBuilder prompt = new StringBuilder();
 
         if (request.systemPrompt() != null) {
-            prompt.append("System: ").append(request.systemPrompt()).append("\n\n");
+            prompt.append("SYSTEM: ").append(request.systemPrompt()).append("\n\n");
         }
 
         if (request.context() != null) {
-            prompt.append("Context: ").append(request.context()).append("\n\n");
+            prompt.append("CONTEXT: ").append(request.context()).append("\n\n");
         }
 
-        if (request.conversationHistory() != null) {
-            for (ChatMessage msg : request.conversationHistory()) {
-                prompt.append(msg.role()).append(": ").append(msg.content()).append("\n");
-            }
-            prompt.append("\n");
-        }
-
-        prompt.append("User: ").append(request.userMessage());
+        prompt.append("USER: ").append(request.userMessage());
 
         return prompt.toString();
     }
