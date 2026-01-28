@@ -175,7 +175,223 @@ Rules:
 - You can't answer questions not related to movies.
 ```
 
-# 6. Mechanizm obsługi zapytań - Krzysztof
+# 6. Mechanizm obsługi zapytań
+
+Mechanizm obsługi zapytań w aplikacji Popcornium został zaprojektowany jako wieloetapowy proces, którego celem jest poprawna interpretacja intencji użytkownika oraz wygenerowanie odpowiedzi adekwatnej do rodzaju zapytania. Architektura rozwiązania opiera się na separacji odpowiedzialności, wzorcach strategii oraz integracji z modelem językowym.
+
+## 6.1. Ogólny przepływ przetwarzania zapytania
+
+Obsługa zapytania użytkownika składa się z poniższych głównych etapów:
+
+1. Otrzymanie zapytania w postaci tekstowej od użytkownika
+2. Detekcja podstawowej intencji zapytania
+3. W przypadku detekcji intencji złożonej - zaplanowanie wykonania zapytania
+4. Budowa kontekstu dla modelu językowego
+5. Wybór odpowiedniej strategii obsługi zapytania
+6. Wygenerowanie odpowiedzi przez model językowy
+
+<figure style="text-align: center;">
+  <img src="documentation/seq_main_flow.png"
+       alt="Diagram wzorca strategii"
+       width="100%" />
+  <figcaption>
+    Rysunek 6.1: Diagram sekwencji przedstawiający przetworzenie zapytania
+  </figcaption>
+</figure>
+
+## 6.2. Detekcja intencji zapytania
+
+Pierwszym etapem przetwarzania zapytania użytkownika jest detekcja intencji. Odpowiada za to komponent **IntentionDetector**.
+
+Proces detekcji intencji polega na:
+
+- przygotowaniu odpowiedniego promptu systemowego
+- wypełnieniu prompta zapytaniem użytkownika
+- uzyskaniu, krótkiej i jednoznacznej odpowiedzi
+
+Poniżej został przedstawiony prompt, który w systemie Popcornium jest wykorzysytwany do detekcji intencji użytkownika:
+
+**Prompt detektora intencji**
+```text
+You are a query classifier.
+Classify the user's query into exactly ONE of the following intentions:
+
+- COUNTING: the answer is a number
+- FILTERING: the result is a list of movies or entities
+- AGGREGATION: summaries, statistics, trends
+- REASONING: inference or explanation not explicitly stated in data
+- TEMPORAL: time-based relationships, changes, or ordering
+- COMPLEX: combination of multiple intentions
+- GENERAL: general movie-related conversation
+
+User query:
+
+"{{question}}"
+
+Respond with ONLY the intention name.
+```
+
+Wynikiem działania detektora intencji jest jedna z dostępnych wartości enumeracji
+**Intention**:
+
+- COUNTING
+- FILTERING
+- AGGREGATION
+- REASONING
+- TEMPORAL
+- COMPLEX
+- GENERAL
+
+Intencje te odpowiadają typom zapytań, które zostały opisane w punkcie piątym dokumentacji. Mechanizm został skonstruowany tak, aby w przypadku braku możliwości jednoznaczego określenia jaką intencję przypisać danemu zapytaniu od użytkownika lub błędu parsowania, system domyślnie użył intencji generalnej. Podejście to zapewnia, że nawet jeśli wystąpi błąd, to zapytanie zostanie zawsze obsłużone.
+
+## 6.3. Kontekst przetwarzania zapytania
+
+Stan przetwarzania zapytania jest przechowywany w obiekcie **LlmContext**. Obiekt ten pełni rolę kontenera kontekstu logicznego pomiędzy kolejnymi etapami obsługi zapytania.
+
+Kontekst przechowuje:
+- wykrytą podstawową intencję zapytania
+- zestaw atrybutów pośrednich (wyniki częściowe z poszczególnych kroków w planie zapytania)
+- końcowy kontekst, który jest przekazywany do modelu językowego, podczas budowania finalnej odpowiedzi
+
+<figure style="text-align: center;">
+  <img src="documentation/cd_context.png"
+       alt="Diagram wzorca strategii"
+       width="1000%" />
+  <figcaption>
+    Rysunek 6.2: Diagram klas przedstawiający kontekst i  struktury pomocnicze
+  </figcaption>
+</figure>
+
+Dla zapytań prostych, czyli tych których obsłużenie jest możliwe tylko za pomocą jednej z dostępnych intencji kontekst jest budowany jednorazowo, natomiast dla zapytań złożonych może być uzupełniany iteracyjnie.
+
+## 6.4. Obsługa zapytań złożonych i planowanie wykonania
+
+W przypadku wykrycia zapytania złożonego - intencja COMLPEX, system wykorzystuje komponent **ComplexExecutionPlanner**. Celem tego komponentu jest przekazanie pierwotnego zapytania od użytkownika do modelu językowego, którego zadaniem jest na podstawie określonych reguł, stworzenie planu wykonania w postaci strukturalnej (JSON), 
+następnie komponent planera wykonania z otrzymanego obiektu stworzy gotowy plan złożony z listy kroków (ExecutionStep). Gotowy plan zostanie przekazany dalej do wykonania przez **LlmService**. Poniżej prompt, który jest wykorzysytwany w systemie Popcornium do tworzenia planów wykonania:
+
+**Prompt planera zapytań**
+```text
+You are a deterministic execution planner.
+
+Your task is to break a complex question into an ordered list of execution steps.
+
+Rules:
+- Each step must map to EXACTLY ONE intention
+- Each step must declare:
+    - what it produces (outputKey)
+    - what previous outputs it depends on (dependsOn)
+    - if it should do own rag retrieval or use other step knowledge or both
+- Steps MUST NOT assume implicit knowledge
+- If a step refers to "this", "that", or "the result", it MUST declare a dependency
+- Queries must be scoped ONLY to the step responsibility
+- Do NOT repeat the full user question
+- Plan should contain maximum one step of each type, do not create too complex plans
+- Return ONLY valid JSON
+
+User question:
+{{query}}
+
+Available intentions:
+- FILTERING: selecting entities or subsets
+- COUNTING: producing numeric results
+- AGGREGATION: statistics, trends, summaries
+- TEMPORAL: ordering or change over time
+- REASONING: inference based on previous results
+
+Return a JSON array of steps in execution order.
+
+Each step MUST follow this schema:
+
+{
+"intention": "FILTERING | COUNTING | AGGREGATION | TEMPORAL | REASONING",
+"query": "precise task description for this step only",
+"dependsOn": ["OUTPUT_KEY_1", "OUTPUT_KEY_2"],
+"outputKey": "UNIQUE_RESULT_NAME", 
+"allowRag": true | false
+}
+
+
+If no dependencies are required, use an empty array.
+```
+
+Parsowanie planu jest realizowane przez **ExecutionPlanParser**, który wydziela fragment
+JSON z odpowiedzi modelu i mapuje go na strukturę danych.
+
+<figure style="text-align: center;">
+  <img src="documentation/seq_planner.png"
+       alt="Diagram wzorca strategii"
+       width="100%" />
+  <figcaption>
+    Rysunek 6.3: Diagram sekwencji przedstawiający proces planowania wykonania zapytania
+  </figcaption>
+</figure>
+
+Po otrzymaniu gotowej struktury danych **LlmService** przechodzi przez poszczególne kroki zapytania i wykorzystując **LlmContextHandler** akumuluje wyniki cząstkowe w rejestrze kontekstu. Dzięk temu poszczególne kroki planu mogą wyciągać informacje z contextu lub do niego wkładać informacje, które same otrzymały z modelu. Po przejścu przez wszystkie kroki planu, budowany jest finalny kontekst który dołączany jest do finalnego zapytania do modelu, wykonywanego za pomocą generalnej intencji. Odpowiedź modelu po tym etapie jest zwracana użytkownikowi jako finalna odpowiedź. 
+
+## 6.5. Mechanizm kontekstowy i obsługa zależności
+
+Podczas obsługi zapytań złożonych, komponent **LlmContextHandler** odpowiada za:
+
+- ustawienie aktualnie przetwarzanego kroku
+- pobieranie wyników zależnych kroków
+- warunkowe dołączanie kontekstu z mechanizmu RAG
+- agregowanie wyników cząstkowych
+
+<figure style="text-align: center;">
+  <img src="documentation/seq_execution.png"
+       alt="Diagram wzorca strategii"
+       width="100%" />
+  <figcaption>
+    Rysunek 6.4: Diagram sekwencji pokazujący mechanizm kontekstowy i obsługę zależności
+  </figcaption>
+</figure>
+
+Dzięki zastosowaniu tego mechanizmu każdy pojedyńczy krok planu wykonania ma możliwość korzystania z wyników poprzednich operacji, co umożliwia wieloetapowe wnioskowanie.
+
+## 6.6. Wzorzec strategii obsługi zapytań
+
+Właściwa obsługa zapytania realizowana jest przy użyciu wzorca **Strategy**.
+Interfejs **QueryStrategy** definiuje wspólny kontrakt dla wszystkich strategii zapytań. Każda ze strategii:
+
+- obsługuje dokładnie jeden typ intencji
+- przygotowuje odpowiedni prompt systemowy
+- buduje żądanie do modelu językowego
+
+Rejestr strategii - **QueryStrategyRegistry**, umożliwia dynamiczny wybór odpowiedniej implementacji na podstawie wykrytej intencji. Dzięki zastosowaniu tego mechanizmu rozszerzanie systemu o nowe typy zapytań jest stosunkowo proste, ponieważ wymaga dostarczenia nowej implementacji wyżej wspomnianego interfejsu, oraz dodania informacji o nowej intencji do detektora intencji. Umożliwa to skalowalność i pozwala na łatwą rozbudowę systemu w przyszłych iteracjach.
+
+<figure style="text-align: center;">
+  <img src="documentation/cd_strategy.png"
+       alt="Diagram wzorca strategii"
+       width="100%" />
+  <figcaption>
+    Rysunek 6.5: Diagram klas przedstawiający wzorzec strategii obłsugi zapytań
+  </figcaption>
+</figure>
+
+## 6.7. Integracja z modelem językowym
+
+Przetwarzanie każdej ze strategii kończy się wygenerowaniem obiektu **ChatRequest**, który zawiera:
+
+- prompt systemowy
+- wiadomość użytkownika
+- opcjonaly kontekst
+- parametry generowania (temperatura, limit tokenów)
+- metadane opisujące intencję
+
+Odpowiedź modelu jest następnie zwracana użytkownikowi jako finalny rezultat zapytania.
+
+## 6.8. Podsumowanie mechanizmu
+
+Zastosowana architektura umożliwia łatwe dodawanie nowych typów zapytań i wspiera zapytania wieloetapowe, pozwala na separację logiki interpretacji od logiki wykonania oraz pozwala na elastyczną integrację z mechanizmami RAG.
+
+<figure style="text-align: center;">
+  <img src="documentation/dd_architecture.png"
+       alt="Diagram wzorca strategii"
+       width="80%" />
+  <figcaption>
+    Rysunek 6.6: Diagram komponentów obsługi zapytań
+  </figcaption>
+</figure>
 
 # 7. Wyniki eksperymentów - Bartosz
 
