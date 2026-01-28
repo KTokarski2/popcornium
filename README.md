@@ -387,7 +387,7 @@ Zastosowana architektura umożliwia łatwe dodawanie nowych typów zapytań i ws
 <figure style="text-align: center;">
   <img src="documentation/dd_architecture.png"
        alt="Diagram wzorca strategii"
-       width="80%" />
+       width="100%" />
   <figcaption>
     Rysunek 6.6: Diagram komponentów obsługi zapytań
   </figcaption>
