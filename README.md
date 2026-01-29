@@ -206,11 +206,20 @@ historia rozmów,
 
 są wykorzystywane do wzbogacania zapytań przekazywanych do modelu językowego, co pozwala na generowanie bardziej spersonalizowanych odpowiedzi.
 
+# 4. Graf wiedzy
+
 ## 4.1. Schemat Grafu
 
 Schemat grafu stanowi fundament całej struktury. Definiuje on typy encji, które reprezentują kluczowe obiekty w domenie, oraz typy relacji, które opisują semantyczne powiązania między tymi obiektami. Poniżej przedstawiony jest graf wygenerowany w aplikacji Neo4j:
 
-[Neo4j Graph](documentation/neo4j_graph.svg)
+<figure style="text-align: center;">
+  <img src="documentation/neo4j_graph.svg"
+       alt="Diagram węzłów w Neo4j"
+       width="1000%" />
+  <figcaption>
+    Rysunek 4.1: Schemat grafu z Neo4j przedstawiający węzły
+  </figcaption>
+</figure>
 
 ### 4.1.1. Encje
 
