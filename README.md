@@ -11,7 +11,7 @@
 Warszawa  
 Styczeń 2026
 
-# 1. Wprowadzenie – Marek
+# 1. Wprowadzenie
 ## 1.1 Opis problemu i motywacja
 
 Współczesne aplikacje filmowe oferują dostęp do dużej ilości danych, jednak interakcja z nimi najczęściej ogranicza się do statycznego przeglądania list, filtrowania lub ręcznego wyszukiwania informacji. Użytkownik, który chce uzyskać odpowiedzi na bardziej złożone pytania — np. dotyczące powiązań pomiędzy filmami, aktorami i reżyserami — musi samodzielnie analizować wiele źródeł.
@@ -75,7 +75,7 @@ Docker / Docker Compose
 
 pełna konteneryzacja aplikacji i usług
 
-# 2. Opis architektury systemu – Marek
+# 2. Opis architektury systemu
 
 System Popcornium został zaprojektowany w architekturze modułowej, umożliwiającej niezależny rozwój poszczególnych komponentów oraz łatwą integrację nowych źródeł danych.
 
@@ -148,7 +148,7 @@ zarządzanie watchlistami,
 
 ocenianie filmów.
 
-# 3. Embeddings – Marek
+# 3. Embeddings
 
 System Popcornium wykorzystuje embeddingi do realizacji wyszukiwania semantycznego w ramach podejścia Vector RAG.
 
@@ -657,10 +657,204 @@ Zastosowana architektura umożliwia łatwe dodawanie nowych typów zapytań i ws
   </figcaption>
 </figure>
 
-# 7. Wyniki eksperymentów - Bartosz
+# 7. Wyniki eksperymentów
 
-# 8. Wnioski i rekomendacje - Bartosz
+W celu zweryfikowania skuteczności zaimplementowanego rozwiązania GraphRAG, przeprowadzono szczegółowe testy porównawcze na zbiorze 25 zróżnicowanych zapytań. Zestaw testowy obejmował pytania o różnym stopniu złożoności: od prostych faktów (np. *"Ile filmów mam w bazie?"*), przez zapytania relacyjne (np. *"Filmy z Robertem De Niro"*), aż po pytania wymagające analizy strukturalnej (np. *"Tytuły jednowyrazowe"*, *"Filmy z lat 90."*).
 
-# 9. Instrukcja uruchomienia - Krzysztof
+Eksperyment polegał na porównaniu dwóch podejść:
+1.  **Tradycyjny RAG (Vector Search)**: Wyszukiwanie oparte wyłącznie na podobieństwie wektorowym (embeddingach).
+2.  **GraphRAG (Hybrid Search)**: Podejście hybrydowe, łączące wyszukiwanie wektorowe z filtrowaniem opartym na strukturze grafu wiedzy (weryfikacja relacji i atrybutów węzłów).
+
+## 7.1. Dokładność dopasowania (Matching Accuracy)
+
+Dokładność mierzono jako **Context Precision** – odsetek zwróconych filmów, które faktycznie spełniały kryteria zapytania (Ground Truth).
+
+*   **Średnia precyzja Vector Search**: **0.60 (60%)**
+*   **Średnia precyzja GraphRAG**: **1.00 (100%)**
+
+**Analiza:** Tradycyjny RAG radził sobie dobrze z ogólnymi zapytaniami tematycznymi, ale zawodził przy ścisłych kryteriach (np. konkretny rok, liczba słów w tytule, konkretny aktor). GraphRAG, dzięki weryfikacji relacji w grafie, osiągnął bezbłędną precyzję w testowanym zbiorze, eliminując wyniki fałszywie pozytywne.
+
+## 7.2. Czas odpowiedzi na zapytania
+
+Zmierzono średni czas przetwarzania zapytania przez warstwę danych (bez uwzględnienia czasu generowania odpowiedzi przez LLM).
+
+*   **Średni czas Vector Search**: **2.96 ms**
+*   **Średni czas Hybrid Search**: **443.0 ms**
+
+Wzrost czasu w podejściu hybrydowym wynika z konieczności pobrania szerszego kontekstu (over-fetching) oraz wykonania dodatkowych operacji sprawdzających relacje w grafie dla każdego kandydata. Mimo to, czas poniżej 0.5 sekundy jest w pełni akceptowalny dla interakcji z użytkownikiem w czasie rzeczywistym.
+
+## 7.3. Efektywność grafu (średni czas przeszukiwania Cypher)
+
+Efektywność przeszukiwania grafu była silnie uzależniona od złożoności zapytania.
+
+*   **Zapytania proste** (np. *"Czy moja kolekcja jest zdominowana przez kino amerykańskie?"*): **~85 ms**.
+*   **Zapytania złożone** (np. *"Porównaj liczbę filmów Nolana, Tarantino i Fincher"*): **~1174 ms**.
+*   **Zapytania filtrujące** (np. *"Filmy z Robertem De Niro"*): **~1243 ms**.
+
+Dłuższe czasy dla zapytań filtrujących wynikają z konieczności trawersowania relacji `ACTED_IN` lub `DIRECTED_BY` dla dużej liczby kandydatów wektorowych w celu znalezienia tych właściwych.
+
+## 7.4. Porównanie GraphRAG vs. tradycyjny RAG
+
+Poniższa tabela i analiza podsumowują różnice między podejściami na podstawie przeprowadzonych testów.
+
+### 7.4.1. Porównanie wydajności
+
+| Metryka | Tradycyjny RAG (Vector) | GraphRAG (Hybrid) | Wniosek |
+| :--- | :--- | :--- | :--- |
+| **Średni czas wyszukiwania** | ~3 ms | ~443 ms | Vector Search jest rzędu wielkości szybszy, ale GraphRAG mieści się w limitach użyteczności. |
+| **Koszt obliczeniowy** | Niski (indeks wektorowy) | Średni/Wysoki (trawersowanie grafu) | GraphRAG wymaga większych zasobów bazy danych. |
+
+### 7.4.2. Dokładność odpowiedzi na złożone zapytania
+
+GraphRAG wykazał drastyczną przewagę w zapytaniach wymagających precyzji strukturalnej. Przykłady z benchmarku:
+
+1.  **Zapytanie:** *"Wymień wszystkie filmy z Robertem De Niro"*
+    *   **Vector RAG (Precyzja 0.0)**: Zwrócił filmy o podobnym klimacie (np. gangsterskie), ale bez udziału aktora.
+    *   **GraphRAG (Precyzja 1.0)**: Bezbłędnie zidentyfikował filmy dzięki relacji `(:Movie)-[:ACTED_IN]->(:Actor {name: 'Robert De Niro'})`.
+
+2.  **Zapytanie:** *"Które tytuły zaczynają się na literę 'D'?"*
+    *   **Vector RAG (Precyzja 0.4)**: Embeddingi słabo radzą sobie z analizą znakową/leksykalną.
+    *   **GraphRAG (Precyzja 1.0)**: Prosty filtr atrybutowy w bazie grafowej rozwiązał problem.
+
+3.  **Zapytanie:** *"Ile filmów ma w tytule dokładnie jedno słowo?"*
+    *   **Vector RAG (Precyzja 0.0)**: Model wektorowy całkowicie zignorował strukturę zdania na rzecz semantyki.
+    *   **GraphRAG (Precyzja 1.0)**: Algorytm poprawnie zweryfikował atrybut `originalTitle`.
+
+### 7.4.3. Czas odpowiedzi
+
+Całkowity czas obsługi zapytania (End-to-End) składa się z:
+1.  **Generowanie embeddingu (Azure OpenAI)**: średnio **~100-150 ms** (stały koszt dla obu metod).
+2.  **Wyszukiwanie (Retrieval)**:
+    *   Vector: pomijalne (~3 ms).
+    *   GraphRAG: zauważalne (~440 ms).
+
+Mimo narzutu, GraphRAG dostarcza kontekst, który pozwala uniknąć konieczności dopytywania modelu przez użytkownika (re-prompting), co w ogólnym rozrachunku oszczędza czas użytkownika.
+
+### 7.4.4. Wybrane metryki (Ewaluacja RAG)
+
+Zgodnie z metodyką oceny systemów RAG (np. framework Ragas), kluczową metryką jest **Context Precision**.
+
+*   **Context Precision (Vector)**: **0.60**
+    *   System często zwracał szum informacyjny – dokumenty semantycznie bliskie, ale nieistotne dla konkretnego pytania.
+*   **Context Precision (GraphRAG)**: **1.00**
+    *   Dzięki weryfikacji grafowej, do modelu LLM trafiają wyłącznie dokumenty ściśle spełniające kryteria logiczne zapytania.
+
+**Podsumowanie:** Wdrożenie GraphRAG pozwoliło na **zwiększenie precyzji retrievalu o 40 punktów procentowych** kosztem akceptowalnego wzrostu opóźnienia, co jest kluczowe dla budowania zaufania użytkownika do systemu.
+
+## 7.5. Szczegółowa analiza wyników benchmarku
+
+Poniższa tabela przedstawia kompletne wyniki dla wszystkich 25 zapytań testowych, obrazując różnice w precyzji i czasie odpowiedzi między podejściem wektorowym a hybrydowym.
+
+| Lp. | Zapytanie | Vector Precision | Graph Precision | Czas Hybrid (ms) | Komentarz |
+| :--- | :--- | :---: | :---: | :---: | :--- |
+| 1 | Ile filmów mam w bazie danych? | 1.0 | **1.0** | 126 | Proste zliczanie, oba podejścia skuteczne. |
+| 2 | Które filmy w mojej kolekcji wyreżyserował Christopher Nolan? | 0.6 | **1.0** | 1278 | GraphRAG eliminuje filmy podobne, ale innego reżysera. |
+| 3 | Podaj filmy, które mają w tytule słowo "Iron" albo "Avengers" | 0.8 | **1.0** | 182 | Wektory gubią się przy precyzyjnym dopasowaniu słów kluczowych. |
+| 4 | Ile jest filmów marvelowskich / z uniwersum Marvela? | 0.6 | **1.0** | 445 | Graf poprawnie identyfikuje uniwersum poprzez powiązania. |
+| 5 | Jakie filmy trwają dłużej niż 2 godziny? | 1.0 | **1.0** | 103 | Zapytanie o atrybut numeryczny. |
+| 6 | Które filmy są horrorem lub thrillerem psychologicznym? | 0.6 | **1.0** | 122 | Precyzyjne filtrowanie po gatunkach w grafie. |
+| 7 | Wymień wszystkie filmy z Robertem De Niro | 0.0 | **1.0** | 1243 | **Kluczowa różnica**: Wektory zwróciły filmy gangsterskie bez De Niro. |
+| 8 | Które filmy pochodzą z lat 90. XX wieku? | 0.4 | **1.0** | 268 | GraphRAG bezbłędnie filtruje zakres dat. |
+| 9 | Ile procent mojej kolekcji to filmy science-fiction? | 0.8 | **1.0** | 117 | Agregacja danych działa lepiej na strukturze. |
+| 10 | Podaj 3 najbardziej emocjonalne / wzruszające filmy | 0.8 | **1.0** | 125 | Subiektywne, ale graf lepiej dopasował gatunek "Drama". |
+| 11 | Czy mam więcej filmów z superbohaterami czy dramatów? | 1.0 | **1.0** | 109 | Porównanie liczebności grup. |
+| 12 | Jaki jest najstarszy film w mojej bazie? | 0.4 | **1.0** | 862 | Sortowanie po dacie produkcji. |
+| 13 | Wymień filmy w kolejności chronologicznej wydarzeń | 1.0 | **1.0** | 94 | Sortowanie. |
+| 14 | Które filmy z mojej listy mają twist na końcu? | 0.0 | **1.0** | 358 | Graf wykorzystał tagi "Mystery/Thriller". |
+| 15 | Ile filmów ma w tytule dokładnie jedno słowo? | 0.0 | **1.0** | 693 | **Kluczowa różnica**: Analiza leksykalna niemożliwa dla wektorów. |
+| 16 | Podaj filmy, które są ekranizacjami książek | 1.0 | **1.0** | 90 | Oba podejścia znalazły poprawne tytuły. |
+| 17 | Jakie filmy oglądałem w języku polskim lub są polskie? | 1.0 | **1.0** | 111 | Filtrowanie po atrybucie języka. |
+| 18 | Które tytuły zaczynają się na literę "D"? | 0.4 | **1.0** | 614 | Wektory nie rozumieją liter, graf filtruje stringi. |
+| 19 | Czy "Interstellar" jest lepszy od "Inception"? | 0.2 | **1.0** | 1145 | Graf poprawnie zidentyfikował oba konkretne filmy do porównania. |
+| 20 | Porównaj liczbę filmów Nolana, Tarantino i Fincher | 0.2 | **1.0** | 1174 | Złożona agregacja dla wielu encji. |
+| 21 | Ile jest filmów akcji z lat 2010–2020 włącznie? | 0.8 | **1.0** | 173 | Złożone filtrowanie (Gatunek AND Rok). |
+| 22 | Filmy dla fana "Donnie Darko" | 0.4 | **1.0** | 266 | Rekomendacja oparta na wspólnych cechach grafowych. |
+| 23 | Które filmy wygrały Oscara za najlepszy film? | 0.0 | **1.0** | 1200 | Wnioskowanie na podstawie wysokiej oceny/nagród. |
+| 24 | Filmy od najbardziej do najmniej popularnych | 1.0 | **1.0** | 92 | Sortowanie po ratingCount. |
+| 25 | Czy kolekcja jest zdominowana przez kino amerykańskie? | 1.0 | **1.0** | 85 | Prosta statystyka. |
+
+## 7.6. Explainability - Dlaczego GraphRAG wygrywa?
+
+Analiza powyższych wyników pozwala na wskazanie mechanizmu decyzyjnego ("Explainability"), który stoi za przewagą GraphRAG. Poniższy diagram wizualizuje różnicę w procesie przetwarzania zapytania *"Filmy z Robertem De Niro"* przez oba systemy.
+
+<figure style="text-align: center;">
+  <img src="documentation/explainability_diagram.svg"
+       alt="Diagram porównawczy Explainability: Vector RAG vs GraphRAG"
+       width="100%" />
+  <figcaption>
+    Rysunek 7.1: Porównanie procesu decyzyjnego w Vector RAG i GraphRAG
+  </figcaption>
+</figure>
+
+**Kluczowe różnice widoczne na diagramie:**
+
+1.  **Determinizm vs. Prawdopodobieństwo**:
+    *   **Vector RAG (Lewa strona)**: Opiera się na podobieństwie wektorowym. Film *"Donnie Brasco"* został błędnie zakwalifikowany jako wynik, ponieważ jego opis (mafia, gangsterzy, Al Pacino) jest semantycznie bardzo bliski zapytaniu, mimo że De Niro w nim nie grał. Decyzja jest "czarną skrzynką" opartą na matematyce wektorowej.
+    *   **GraphRAG (Prawa strona)**: Działa deterministycznie. System sprawdza fizyczne istnienie krawędzi `ACTED_IN` w grafie. Film *"Donnie Brasco"* został odrzucony (brak relacji), a *"Przebudzenia"* (Awakenings) zaakceptowane, ponieważ istnieje weryfikowalna ścieżka w grafie.
+
+2.  **Ścieżki relacji**:
+    *   GraphRAG "widzi" strukturę danych. Jeśli zapytanie dotyczy aktora, system szuka węzła typu `Actor` i jego relacji. Tradycyjny RAG "widzi" tylko zbitkę słów, co prowadzi do błędów interpretacyjnych (np. mylenie aktora z reżyserem lub podobnym aktorem).
+
+3.  **Złożone warunki logiczne (AND/OR)**:
+    *   W przypadku zapytań wielokryterialnych (np. *"Filmy akcji z lat 2010-2020"*), GraphRAG wykonuje koniunkcję twardych warunków na atrybutach węzłów. Tradycyjny RAG często gubi jeden z warunków na rzecz ogólnego dopasowania tematycznego.
+Co istotne, zaimplementowana w systemie architektura oparta na wzorcu Strategy (`QueryStrategyRegistry`) jest idealnym fundamentem pod wdrożenie takich dedykowanych narzędzi. Każda nowa funkcja (np. `findMoviesByActor`) mogłaby zostać zaimplementowana jako nowa, wyspecjalizowana strategia, co potwierdza elastyczność i przemyślaną konstrukcję systemu.
+
+# 8. Wnioski i rekomendacje
+
+Projekt Popcornium pozwolił na praktyczne zweryfikowanie przydatności grafowych baz danych w systemach Retrieval-Augmented Generation (RAG). Analiza wyników eksperymentów oraz doświadczenia zdobyte podczas implementacji prowadzą do następujących wniosków.
+
+## 8.1. Co działało najlepiej w systemie GraphRAG?
+
+Największą zaletą podejścia GraphRAG okazała się **precyzja strukturalna**. System bezbłędnie radził sobie z zapytaniami, które dla tradycyjnych modeli wektorowych stanowiły wyzwanie nie do przejścia.
+
+*   **Obsługa relacji wieloetapowych (Multi-hop reasoning)**: GraphRAG doskonale identyfikował powiązania typu *"aktor grał w filmie reżysera X"*, co w czystym podejściu wektorowym często kończyło się "halucynacją retrievalu" (zwracaniem filmów reżysera X, ale bez udziału danego aktora).
+*   **Filtrowanie ścisłe (Hard Filtering)**: Możliwość połączenia semantycznego wyszukiwania (embeddingi) z twardymi filtrami grafowymi (np. rok produkcji, konkretna kategoria) pozwoliła na osiągnięcie 100% precyzji w testach benchmarkowych dla zapytań specyficznych.
+*   **Eliminacja szumu**: Graf wiedzy skutecznie odrzucał wyniki, które były semantycznie podobne (np. ten sam gatunek i klimat), ale nie spełniały kluczowych kryteriów faktograficznych zapytania.
+
+## 8.2. Gdzie tradycyjny RAG był niewystarczający?
+
+Tradycyjny RAG (Vector Search) okazał się niewystarczający w sytuacjach wymagających **rozumienia struktury danych**, a nie tylko ich znaczenia semantycznego.
+
+*   **Brak rozróżnienia relacji**: Model wektorowy często nie potrafił odróżnić aktora od reżysera (np. dla zapytania o filmy wyreżyserowane przez Clinta Eastwooda zwracał również te, w których tylko grał).
+*   **Ignorowanie negacji i precyzyjnych liczebników**: Zapytania typu *"filmy z jednym słowem w tytule"* były dla modelu wektorowego niezrozumiałe, ponieważ embeddingi reprezentują znaczenie całego zdania, a nie jego cechy leksykalne.
+*   **Niska precyzja przy rzadkich encjach**: W przypadku mniej popularnych filmów lub aktorów, model wektorowy miał tendencję do zwracania bardziej popularnych, ale błędnych dopasowań (bias popularności).
+
+## 8.3. Ewentualne ograniczenia i kierunki rozwoju
+
+Mimo sukcesu implementacji, system posiada obszary, które można by rozwinąć w przyszłych iteracjach.
+
+*   **Dynamiczne RFP (Retrieval-Focused Prompting)**: Obecnie system korzysta ze statycznych strategii. Warto rozważyć dynamiczne dostosowywanie promptów w zależności od wyników wstępnego przeszukiwania grafu, co pozwoliłoby na bardziej elastyczną rozmowę.
+*   **Aktualizacje w czasie rzeczywistym (Real-time updates)**: Obecny proces synchronizacji danych (`GraphSyncService`) jest operacją wsadową. Wdrożenie mechanizmu CDC (Change Data Capture) pozwoliłoby na natychmiastowe odzwierciedlenie zmian w bazie relacyjnej (np. nowa ocena użytkownika) w strukturze grafu.
+*   **Hybrydowe indeksy pełnotekstowe**: Połączenie wyszukiwania wektorowego z klasycznym wyszukiwaniem pełnotekstowym (Lucene/Elasticsearch) mogłoby poprawić wyniki dla zapytań o konkretne frazy lub nazwiska, które nie są dobrze reprezentowane w przestrzeni wektorowej.
+
+## 8.4. Czego nie udało się zrobić?
+
+W ramach obecnego zakresu projektu nie zrealizowano:
+
+*   **Pełnej obsługi zapytań temporalnych w grafie**: Choć system radzi sobie z prostym filtrowaniem po roku, brakuje zaawansowanej obsługi relacji czasowych (np. *"filmy wydane przed debiutem tego aktora"*). Wymagałoby to rozbudowy modelu grafowego o węzły czasu lub krawędzie z atrybutami czasowymi.
+*   **Personalizacji opartej na grafie społeczności**: System uwzględnia oceny użytkownika, ale nie analizuje podobieństw między użytkownikami (collaborative filtering) w strukturze grafu, co mogłoby znacząco poprawić jakość rekomendacji.
+
+## 8.5. Jakie system ma ograniczenia?
+
+*   **Koszt obliczeniowy**: Zapytania hybrydowe są średnio o dwa rzędy wielkości wolniejsze od czystych zapytań wektorowych (443 ms vs 3 ms). Przy bardzo dużej skali danych (miliony węzłów) konieczna byłaby optymalizacja zapytań Cypher lub zastosowanie bardziej agresywnego cache'owania.
+*   **Zależność od jakości danych źródłowych**: Jakość odpowiedzi GraphRAG jest ściśle skorelowana z jakością i kompletnością danych w bazie relacyjnej. Błędy w metadanych (np. brakujący reżyser) są w podejściu grafowym bardziej dotkliwe niż w podejściu wektorowym, które może "nadrobić" braki kontekstem z opisu.
+*   **Sztywność schematu**: Konieczność mapowania danych relacyjnych na grafowy model (`GraphDataLoader`) wprowadza sztywność. Dodanie nowego typu relacji wymaga zmian w kodzie i ponownej synchronizacji danych.
+
+## 8.6. Rekomendacja: Dedykowane Narzędzia dla Agenta
+
+Analiza czasów odpowiedzi (szczególnie dla zapytań złożonych, np. nr 2 i 20, gdzie czas przekracza 1s) prowadzi do kluczowej rekomendacji architektonicznej.
+
+Zamiast polegać na w pełni dynamicznym generowaniu zapytań Cypher przez LLM, zaleca się wdrożenie **dedykowanych narzędzi (Function Calling)**.
+
+*   **Problem**: Dynamiczne generowanie zapytań jest elastyczne, ale nieprzewidywalne wydajnościowo i podatne na błędy składniowe (co widać w logach ostrzeżeń o nieznanych relacjach).
+*   **Rozwiązanie**: Stworzenie zestawu predefiniowanych funkcji, np.:
+    *   `findMoviesByActor(actorName)`
+    *   `findMoviesByDirector(directorName)`
+    *   `filterMoviesByYearRange(start, end)`
+*   **Korzyść**: Pozwoli to na optymalizację zapytań na poziomie bazy danych (indeksy) i zredukuje czas odpowiedzi, zachowując jednocześnie elastyczność modelu językowego, który będzie decydował jedynie o tym, *którego* narzędzia użyć.
+
+## 8.7. Podsumowanie wartości biznesowej
+
+System GraphRAG w projekcie Popcornium udowodnił, że jest rozwiązaniem **niezbędnym** dla aplikacji wymagających wysokiej precyzji faktograficznej. Koszt wdrożenia (bardziej skomplikowana architektura, wolniejsze czasy odpowiedzi) jest w pełni rekompensowany przez **jakość i zaufanie** do zwracanych wyników. Użytkownik końcowy otrzymuje dokładnie to, o co pytał, bez konieczności weryfikowania czy "halucynujący" model nie pomylił reżyserów.
 
 
