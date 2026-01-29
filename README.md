@@ -13,198 +13,130 @@ Styczeń 2026
 
 # 1. Wprowadzenie
 ## 1.1 Opis problemu i motywacja
+Współczesne aplikacje filmowe oferują dostęp do bardzo dużych zbiorów danych, jednak interakcja z nimi najczęściej ogranicza się do statycznego przeglądania list, filtrowania wyników lub prostego wyszukiwania po nazwach. W praktyce użytkownik, który chce uzyskać odpowiedź na bardziej złożone pytanie. Na przykład dotyczące powiązań pomiędzy filmami, aktorami i reżyserami lub rekomendacji opartych na własnych preferencjach, zmuszony jest do samodzielnego analizowania wielu źródeł informacji.
 
-Współczesne aplikacje filmowe oferują dostęp do dużej ilości danych, jednak interakcja z nimi najczęściej ogranicza się do statycznego przeglądania list, filtrowania lub ręcznego wyszukiwania informacji. Użytkownik, który chce uzyskać odpowiedzi na bardziej złożone pytania — np. dotyczące powiązań pomiędzy filmami, aktorami i reżyserami — musi samodzielnie analizować wiele źródeł.
-
-Celem projektu Popcornium było stworzenie systemu, który umożliwia:
-
-eksplorację bazy filmowej w naturalny sposób,
-
-zadawanie pytań w języku naturalnym,
-
-wykorzystanie nowoczesnych technik Retrieval-Augmented Generation (RAG),
-
-porównanie podejścia wektorowego oraz grafowego (GraphRAG) w praktycznym zastosowaniu.
-
+Motywacją do stworzenia systemu Popcornium było zaprojektowanie aplikacji, która umożliwia eksplorację bazy filmowej w sposób bardziej naturalny i intuicyjny. Kluczowym założeniem projektu było wykorzystanie interfejsu konwersacyjnego, pozwalającego na zadawanie pytań w języku naturalnym oraz uzyskiwanie odpowiedzi opartych na rzeczywistych danych przechowywanych w systemie. Projekt stanowi również praktyczne porównanie dwóch podejść do wyszukiwania wiedzy w systemach RAG: wyszukiwania wektorowego oraz wyszukiwania grafowego (GraphRAG).
 ## 1.2 Wizja systemu Popcornium
 
-Popcornium to aplikacja webowa, która łączy klasyczną aplikację filmową z inteligentnym chatbotem opartym o modele językowe. System udostępnia:
+Popcornium to aplikacja webowa łącząca funkcjonalności klasycznej aplikacji filmowej z inteligentnym chatbotem opartym o modele językowe. System umożliwia użytkownikowi przeglądanie bazy filmów wraz z grafikami, dostęp do szczegółowych informacji o wybranych produkcjach, takich jak obsada, reżyser czy opis fabuły, a także tworzenie własnych watchlist i ocenianie filmów za pomocą prostych reakcji (łapka w górę / łapka w dół).
 
-listę filmów wraz z grafikami,
-
-szczegóły filmu (obsada, reżyser, opis),
-
-możliwość tworzenia własnych watchlist,
-
-ocenianie filmów za pomocą reakcji - łapka w górę / łapka w dół,
-
-czat kontekstowy wykorzystujący RAG i GraphRAG.
-
-Chatbot uwzględnia zarówno dane domenowe (filmy, aktorzy, reżyserzy), jak i kontekst użytkownika (historia rozmowy, oceny, watchlisty), co pozwala generować bardziej trafne i spersonalizowane odpowiedzi.
-
+Centralnym elementem aplikacji jest chatbot kontekstowy, który wykorzystuje techniki RAG oraz GraphRAG. Chatbot uwzględnia zarówno dane domenowe przechowywane w systemie, jak i kontekst użytkownika obejmujący historię rozmów, wystawione oceny oraz elementy watchlist. Dzięki temu możliwe jest generowanie odpowiedzi bardziej trafnych, spójnych oraz lepiej dopasowanych do preferencji konkretnego użytkownika.
 ## 1.3 Zastosowane technologie
+
+Backend aplikacji został zrealizowany w języku Java 21 z wykorzystaniem frameworka Spring Boot w wersji 3.5.8, co zapewnia wysoką stabilność, modularność oraz łatwą integrację z zewnętrznymi usługami. Do obsługi bezpieczeństwa zastosowano Spring Security w konfiguracji stateless z mechanizmem JWT, co pozwala na bezpieczną identyfikację użytkowników bez konieczności utrzymywania sesji po stronie serwera.
+
+Dane aplikacyjne przechowywane są w relacyjnej bazie PostgreSQL, rozszerzonej o wtyczkę PgVector, która umożliwia efektywne przechowywanie oraz porównywanie embeddingów wykorzystywanych w wyszukiwaniu wektorowym. Relacje pomiędzy filmami, aktorami i reżyserami odwzorowane są dodatkowo w bazie grafowej Neo4j, wykorzystywanej w mechanizmie GraphRAG.
+
+Warstwa frontendowa została zaimplementowana w React.js z użyciem biblioteki Material UI, co umożliwia budowę nowoczesnego i responsywnego interfejsu użytkownika.
+
+System integruje się z zewnętrznymi źródłami danych, takimi jak IMDb oraz Wikipedia, które dostarczają informacji filmowych i opisowych. Generowanie embeddingów oraz odpowiedzi modelu językowego realizowane jest przy użyciu usługi Azure OpenAI. Pliki multimedialne, w szczególności zdjęcia filmów i aktorów, przechowywane są w obiektowym systemie MinIO. Całość infrastruktury została skonteneryzowana z użyciem Docker oraz Docker Compose.
 ### Backend
 
-Java 21
+- Java 21
 
-Spring Boot 3.5.8
+- Spring Boot 3.5.8
 
-Spring Security (stateless, JWT)
+- Spring Security (stateless, JWT)
 
-PostgreSQL + PgVector
+- PostgreSQL + PgVector
 
-Neo4j
+- Neo4j
 
 ### Frontend
 
-React.js
+- React.js
+- MaterialUI
 
-Integracje zewnętrzne
+### Integracje zewnętrzne
 
-IMDb – źródło danych filmowych
+- IMDb – źródło danych filmowych
 
-Wikipedia – dodatkowe informacje opisowe
+- Wikipedia – dodatkowe informacje opisowe
 
-Azure OpenAI – generowanie embeddingów oraz odpowiedzi LLM
+- Azure OpenAI – generowanie embeddingów oraz odpowiedzi LLM
 
-MinIO – przechowywanie zdjęć filmów i aktorów
+- MinIO – przechowywanie zdjęć filmów i aktorów
 
-Infrastruktura
+### Infrastruktura
 
-Docker / Docker Compose
-
-pełna konteneryzacja aplikacji i usług
+- Docker / Docker Compose - pełna konteneryzacja aplikacji i usług
 
 # 2. Opis architektury systemu
 
-System Popcornium został zaprojektowany w architekturze modułowej, umożliwiającej niezależny rozwój poszczególnych komponentów oraz łatwą integrację nowych źródeł danych.
+Architektura systemu Popcornium została zaprojektowana w sposób modułowy, z wyraźnym podziałem odpowiedzialności pomiędzy komponentami odpowiedzialnymi za dane, wyszukiwanie wiedzy oraz interakcję z użytkownikiem.
 
 ## 2.1 Ogólny schemat architektury
+<figure style="text-align: center;">
+  <img src="documentation/diagram_2_1.png"
+       alt="Diagram wzorca strategii"
+       width="100%" />
+  <figcaption>
+    Rysunek 2.1 schemat przepływu danych
+  </figcaption>
+</figure>
 
-(diagram przepływu danych i komponentów)
+        
 
 ## 2.2 Źródła danych
-
-IMDb – dane filmowe (tytuły, obsada, reżyserzy, daty produkcji)
-
-Wikipedia – opisy i artykuły uzupełniające
-
-MinIO – obrazy filmów i aktorów
-
-Dane użytkownika:
-
-watchlisty
-
-oceny - łapka w górę / łapka w dół
-
-historia konwersacji
+System korzysta zarówno z danych zewnętrznych, jak i danych generowanych przez użytkowników. Informacje filmowe pozyskiwane są z serwisów IMDb oraz Wikipedia, natomiast obrazy filmów i aktorów przechowywane są w systemie MinIO. Dane użytkowników obejmują tworzone watchlisty, wystawiane oceny oraz historię konwersacji z chatbotem i są zapisywane w relacyjnej bazie danych.
 
 ## 2.3 Moduły systemu
-Data Ingestion
+### 2.3.1 Moduł integracji
 
 Moduł odpowiedzialny za pobieranie i inicjalne ładowanie danych filmowych do relacyjnej bazy danych. Dane są mapowane na encje domenowe oraz zapisywane przy starcie aplikacji.
 
-Relacyjna baza danych (PostgreSQL + PgVector)
+### 2.3.2 Warstwa danych
 
-przechowuje dane filmowe prezentowane w interfejsie,
+Relacyjna baza danych PostgreSQL pełni rolę głównego repozytorium danych aplikacyjnych. Przechowywane są w niej informacje filmowe prezentowane w interfejsie użytkownika, embeddingi wykorzystywane w wyszukiwaniu wektorowym oraz dane użytkowników, takie jak oceny i watchlisty. Uzupełnieniem tej warstwy jest baza grafowa Neo4j, która przechowuje relacje pomiędzy encjami domenowymi i umożliwia realizację zapytań grafowych w ramach GraphRAG.
 
-przechowuje embeddingi wykorzystywane w Vector RAG,
+### 2.3.3 Chatbot i warstwa RAG
 
-zawiera dane użytkowników, ich oceny oraz watchlisty.
+Chatbot stanowi centralny komponent systemu. Odpowiada on za analizę intencji zapytania użytkownika, wybór odpowiedniej strategii wyszukiwania (Vector RAG lub GraphRAG), wzbogacanie promptu o kontekst użytkownika oraz komunikację z usługą Azure OpenAI w celu wygenerowania odpowiedzi.
 
-Baza grafowa (Neo4j)
+### 2.3.4 Moduł bezpieczeństwa
 
-Odpowiada za reprezentację relacji pomiędzy encjami:
+Moduł bezpieczeństwa oparty o Spring Security zapewnia uwierzytelnianie i autoryzację użytkowników z wykorzystaniem tokenów JWT. Rozwiązanie to umożliwia bezpieczny dostęp do zasobów API oraz jednoznaczną identyfikację użytkownika w operacjach takich jak ocenianie filmów, zarządzanie watchlistami czy personalizacja odpowiedzi chatbota.
 
-film → aktor
+### 2.3.5 Frontend Layer
 
-film → reżyser
-
-film → kategoria
-
-Dane grafowe wykorzystywane są w mechanizmie GraphRAG.
-
-Conversation Agent
-
-Centralny komponent systemu odpowiedzialny za:
-
-analizę intencji zapytania użytkownika,
-
-wybór trybu wyszukiwania (Vector RAG lub GraphRAG),
-
-wzbogacanie promptu o kontekst użytkownika,
-
-komunikację z Azure OpenAI.
-
-Frontend Layer
-
-Aplikacja frontendowa napisana w React.js, umożliwiająca:
-
-przeglądanie filmów,
-
-interakcję z chatbotem,
-
-zarządzanie watchlistami,
-
-ocenianie filmów.
+Warstwa frontendowa, zaimplementowana w React.js, umożliwia użytkownikom interakcję z systemem poprzez przeglądanie filmów, korzystanie z chatbota oraz zarządzanie własnymi danymi. Frontend komunikuje się z backendem wyłącznie poprzez zabezpieczone API.
 
 # 3. Embeddings
 
-System Popcornium wykorzystuje embeddingi do realizacji wyszukiwania semantycznego w ramach podejścia Vector RAG.
+System Popcornium wykorzystuje embeddingi jako kluczowy mechanizm reprezentacji wiedzy tekstowej w ramach podejścia Retrieval-Augmented Generation (RAG). Celem zastosowania embeddingów jest umożliwienie semantycznego wyszukiwania informacji o filmach, aktorach oraz powiązanych kontekstach w sposób niezależny od dokładnej treści zapytania użytkownika.
+
+Embeddingi stanowią warstwę pośrednią pomiędzy klasyczną bazą danych a modelem językowym, umożliwiając efektywne dopasowanie zapytań użytkownika do najbardziej relewantnych fragmentów wiedzy.
 
 ## 3.1 Model danych
 
-Główne encje wykorzystywane w procesie generowania embeddingów:
+Proces generowania embeddingów opiera się na danych przechowywanych w relacyjnej bazie danych, która pełni rolę głównego repozytorium wiedzy o filmach. Centralną encją w tym modelu jest obiekt Movie, który agreguje informacje o filmie, takie jak metadane produkcyjne, obsada, opisy fabularne oraz powiązane artykuły z Wikipedii.
 
-Movie
+Dane te są reprezentowane przez zestaw encji domenowych, obejmujących m.in. aktorów, reżyserów, kategorie filmowe, opisy fabuły oraz artykuły encyklopedyczne. Dodatkowo system przechowuje informacje o interakcjach użytkownika z filmami, takie jak oceny czy elementy watchlisty. Wygenerowane embeddingi zapisywane są w dedykowanej encji Embedding, która przechowuje zarówno wektor osadzenia, jak i treść źródłową, na podstawie której został on wygenerowany.
 
-Actor
+Tak zaprojektowany model danych umożliwia elastyczne przetwarzanie informacji o filmach oraz łatwe rozszerzanie systemu o kolejne źródła wiedzy.
 
-Director
-
-Category
-
-Description
-
-WikipediaArticle
-
-MovieRating
-
-Embedding
 
 ## 3.2 Proces generowania embeddingów
 
-Proces generowania embeddingów realizowany jest przez klasę EmbeddingService.
+Proces generowania embeddingów realizowany jest przez dedykowany komponent EmbeddingService, odpowiedzialny za przekształcanie danych tekstowych w reprezentację wektorową. Proces ten wykonywany jest cyklicznie lub inicjalnie, po załadowaniu danych filmowych do bazy.
 
-System pobiera wszystkie filmy wraz z powiązanymi encjami z relacyjnej bazy danych.
+Na początku system pobiera wszystkie filmy wraz z pełnym zestawem powiązanych danych. Następnie informacje o każdym filmie są dzielone na logiczne fragmenty, które odpowiadają różnym aspektom wiedzy o filmie. Taki podział danych (chunking) pozwala na zachowanie spójności semantycznej poszczególnych fragmentów oraz zwiększa precyzję późniejszego wyszukiwania.
 
-Dane każdego filmu są dzielone na logiczne fragmenty (chunking):
+Fragmenty te obejmują m.in. podstawowe metadane filmu, informacje o obsadzie, opis fabuły oraz treści pochodzące z Wikipedii. Każdy z tych fragmentów przetwarzany jest niezależnie i przekazywany do integracji z usługą Azure OpenAI, gdzie generowany jest embedding przy użyciu dedykowanego modelu do osadzeń tekstowych.
 
-Metadata – tytuły, rok produkcji, reżyser, kategorie
+Wygenerowane wektory są następnie walidowane pod kątem poprawności rozmiaru i zapisywane w bazie danych wraz z informacją o typie fragmentu oraz jego oryginalnej treści. Dzięki temu system zachowuje pełną kontrolę nad tym, jaki kontekst został użyty podczas późniejszego wyszukiwania.
 
-Cast – lista aktorów
+## 3.3 Wykorzystanie embeddingów w wyszukiwaniu semantycznym
 
-Plot summary – opis filmu
+Embeddingi zapisane w bazie danych wykorzystywane są podczas obsługi zapytań użytkownika w ramach strategii Vector RAG. W momencie zadania pytania system generuje embedding dla zapytania użytkownika, a następnie porównuje go z embeddingami zapisanymi w bazie danych.
 
-Wikipedia article – treść artykułu
+Na podstawie podobieństwa semantycznego wybierane są najbardziej relewantne fragmenty wiedzy, które następnie przekazywane są do modelu językowego jako kontekst wspomagający generowanie odpowiedzi. Takie podejście pozwala na uzyskanie odpowiedzi opartych na faktycznych danych znajdujących się w systemie, a nie wyłącznie na wiedzy ogólnej modelu językowego.
 
-Każdy fragment jest przekazywany do integracji Azure OpenAI, gdzie generowany jest embedding.
+## 3.4 Wykorzystanie kontekstu użytkownika
 
-Wygenerowane wektory zapisywane są w encji Embedding wraz z typem fragmentu i jego treścią.
+Oprócz embeddingów system Popcornium uwzględnia również kontekst związany z aktywnością użytkownika. Informacje takie jak oceny filmów, tworzone watchlisty czy historia rozmów z czatem wykorzystywane są podczas budowania zapytania przekazywanego do modelu językowego.
 
-Embeddingi wykorzystywane są w mechanizmie wyszukiwania kontekstowego podczas obsługi zapytań użytkownika.
-
-## 3.3 Wykorzystanie kontekstu użytkownika
-
-Dane o interakcjach użytkownika:
-
-oceny - łapka w górę / łapka w dół,
-
-watchlisty,
-
-historia rozmów,
-
-są wykorzystywane do wzbogacania zapytań przekazywanych do modelu językowego, co pozwala na generowanie bardziej spersonalizowanych odpowiedzi.
+Kontekst użytkownika pozwala na personalizację odpowiedzi oraz lepsze dopasowanie rekomendacji do preferencji konkretnej osoby. Dane te nie są bezpośrednio przekształcane w embeddingi, lecz pełnią rolę dodatkowego kontekstu logicznego, wzbogacającego finalny prompt.
 
 # 4. Graf wiedzy
 
