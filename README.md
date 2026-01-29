@@ -789,4 +789,196 @@ Zamiast polegać na w pełni dynamicznym generowaniu zapytań Cypher przez LLM, 
 
 System GraphRAG w projekcie Popcornium udowodnił, że jest rozwiązaniem **niezbędnym** dla aplikacji wymagających wysokiej precyzji faktograficznej. Koszt wdrożenia (bardziej skomplikowana architektura, wolniejsze czasy odpowiedzi) jest w pełni rekompensowany przez **jakość i zaufanie** do zwracanych wyników. Użytkownik końcowy otrzymuje dokładnie to, o co pytał, bez konieczności weryfikowania czy "halucynujący" model nie pomylił reżyserów.
 
+# 9. Instrukcja uruchomienia
 
+## 9.1. Wymagania systemowe
+
+Do uruchomienia części serwerowej wymagane jest:
+
+- **Java Development Kit (JDK) 21**
+
+Weryfikacja zainstalowanej wersji Javy:
+
+```bash
+java --version
+```
+Wymagana wersja:
+
+```bash
+openjdk version "21.0.x"
+```
+Do uruchomienia części klienckiej wymagane jest:
+
+- **Node.js (wersja 24.12.0)**
+
+Weryfikacja wersji Node.js:
+
+```bash
+node -v
+```
+
+Nardzędzia dodatkowe:
+
+- Docker
+- Docker Compose
+
+Docker wykorzystywany jest do uruchomienia usług infrastrukturalnych (bazy danych oraz systemy pomocnicze).
+
+## 9.2. Struktura projektu
+
+```bash
+Projects/
+└── popcornium/
+├── popcornium-api # Backend (Spring Boot)
+└── popcornium-frontend # Frontend (React + Vite)
+```
+
+## 9.3. Konfiguracja backendu (popcornium-api)
+
+W katalogu **popcornium-api** znajduje się plik **.env.example**, zawierający kompletny zestaw wymaganych zmiennych środowiskowych.
+
+**Procedura:**
+
+1. Należy przejść do katalogu backendu:
+
+```bash
+cd ~/Projects/popcornium/popcornium-api
+```
+
+2. Utworzyć plik **.env** na podstawie pliku przykładowego
+
+```bash
+cp .env.example .env
+```
+
+3. Uzupełnić plik **.env** zgodnie z wymaganiami środowiska lokalnego. W szczególności
+należy ustawić:
+
+- DB_PASSWORD
+- PGADMIN_PASSWORD
+- NEO4J_PASSWORD
+- AZURE_OPENAI_API_KEY
+- AZURE_OPENAI_ENDPOINT
+- JWT_SECRET - bezpieczny losowy ciąg znakóœ o długości co najmniej 256 bitów
+
+Pozostałe zmienne mogą pozostać z wartościami domyślnymi.
+
+## 9.4. Uruchomienie usług infrastrukturalnych
+Projekt wykorzystuje następujące usługi uruchamiane za pomocą Docker Compose:
+
+- PostgreSQL
+- PgAdmin
+- Neo4j
+- MinIO
+
+Uruchomienie usług:
+
+```bash
+docker-compose up -d
+```
+
+Po uruchomieniu usługi będą dostępne lokalnie pod następującymi adresami:
+
+- PostgreSQL: localhost:5432
+- PgAdmin: http://localhost:5050
+- Neo4j (HTTP): http://localhost:7474
+- Neo4j (Bolt): localhost:7687
+- MinIO: http://localhost:9000
+
+## 9.5. Uruchomienie aplikacji backendowej
+
+**Opcja 1 - uruchomienie w trybie deweloperskim**
+```bash
+./gradlew bootRun
+```
+
+**Opcja 2 - budowa artefaktu i uruchomienie pliku JAR**
+```bash
+./gradlew build
+java -jar build/libs/popcornium-api-*.jar
+```
+
+Aplikacja backendowa uruchamiana jest domyślnie na porcie:
+
+```bash
+http://localhost:8080
+```
+
+Aktywny profil aplikacji:
+
+```bash
+SPRING_PROFILES_ACTIVE=dev
+```
+## 9.6. Uruchomienie aplikacji frontendowej
+
+Frontend oparty jest o React oraz narzędzie Vite, które odpowiada za serwer deweloperski i bundling aplikacji.
+
+Uruchomienie aplikacji:
+
+```bash
+npm run dev
+```
+
+Domyślny adres aplikacji frontendowej:
+
+```bash
+http://localhost:5173
+```
+
+## 9.7. Utworzenie użytkownika
+
+Aby możliwe było wygenerowanie embeddings, konieczne jest utworzenie nowego użytkownika w systemie:
+
+**Endpoint**
+
+```bash
+POST http://localhost:8080/api/auth/register
+```
+
+**Body**
+
+```json
+{
+    "name": "test",
+    "email": "test@gmail.com",
+    "password": "123"
+}
+```
+
+## 9.8. Generowanie embeddings
+
+Aby wygenerować embeddings należy zalogować się do aplikacji wykorzystując użytkownika
+utworzonego w poprzednim punkcie: 
+
+**Endpoint**
+```bash
+POST http://localhost:8080/api/auth/login
+```
+
+**Body**
+```json
+{
+    "email": "kt@gmail.com",
+    "password": "123"
+}
+```
+
+Po poprawnym zalogowaniu endpoint zwróci token, którego trzeba użyć aby wygenerować embeddings, podając go jako **Bearer token** do poniższego requestu:
+
+**Endpoint**
+```bash
+GET http://localhost:8080/api/test/embedAll
+```
+
+Endpoint aktywuje generację embeddings, proces należy wykonać dopiero gdy w systemie znajdują się wszystkie dane dotyczące filmów. W przypadku problemów z wygenerowaniem embbeding należy wykonać poniższy skrypt na bazie danych i spróbować ponownie: 
+
+```sql
+ALTER TABLE embedding
+    DROP CONSTRAINT ukq6r7j47e8isrfg3d9sn8hsqd;
+
+CREATE INDEX embedding_vector_idx
+    ON embedding
+        USING hnsw (vector_value vector_cosine_ops);
+
+TRUNCATE TABLE embedding;
+```
